@@ -1,96 +1,97 @@
-// Ingredient safety database compiled from EWG Skin Deep public summaries
-// and EU CosIng database (open access). hazardScore approximates EWG 1-10 scale.
+// Ingredient safety database compiled from EWG Skin Deep public summaries,
+// EU CosIng database (open access), IARC classifications, and EU Cosmetics Regulation 1223/2009.
+// hazardScore approximates EWG 1-10 scale.
 
 const HARMFUL_INGREDIENTS = [
   {
     names: ['formaldehyde', 'formalin', 'methanal'],
-    concern: 'Known carcinogen (IARC Group 1). Linked to leukaemia and nasopharyngeal cancer. Banned in cosmetics in Japan and Sweden.',
+    concern: 'Known human carcinogen (IARC Group 1). Classified as a proven cause of leukaemia and nasopharyngeal cancer. Banned in cosmetics in Japan, Sweden, and restricted by EU Cosmetics Regulation.',
     hazardScore: 10,
     alternatives: 'Look for products preserved with sodium benzoate, potassium sorbate, or vitamin E (tocopherol).'
   },
   {
     names: ['parabens', 'methylparaben', 'ethylparaben', 'propylparaben', 'butylparaben', 'isobutylparaben', 'isopropylparaben'],
-    concern: 'Endocrine disruptors. Mimic oestrogen and have been detected in breast tumour tissue. Longer-chain parabens (butyl/propyl) are most concerning.',
-    hazardScore: 7,
-    alternatives: 'Phenoxyethanol (mild), sodium benzoate, potassium sorbate, or naturally preserved formulas.'
+    concern: 'Suspected endocrine disruptors. Longer-chain parabens (butylparaben, propylparaben) are restricted in EU cosmetics. Short-chain parabens (methyl, ethyl) are considered lower risk by the EU Scientific Committee on Consumer Safety (SCCS).',
+    hazardScore: 6,
+    alternatives: 'Phenoxyethanol, sodium benzoate, potassium sorbate, or naturally preserved formulas.'
   },
   {
     names: ['sodium lauryl sulfate', 'sls', 'sodium laureth sulfate', 'sles'],
-    concern: 'Harsh surfactant that strips the skin barrier, causes dryness and irritation. SLES may be contaminated with 1,4-dioxane (a possible carcinogen).',
-    hazardScore: 6,
+    concern: 'Harsh surfactant that can strip the skin barrier and cause dryness or irritation, particularly in sensitive skin. SLES may contain trace 1,4-dioxane (IARC Group 2A: probable carcinogen) as a manufacturing by-product.',
+    hazardScore: 5,
     alternatives: 'Cocamidopropyl betaine, sodium cocoyl isethionate, or decyl glucoside — gentler plant-derived surfactants.'
   },
   {
     names: ['phthalates', 'dibutyl phthalate', 'diethylhexyl phthalate', 'dimethyl phthalate'],
-    concern: 'Reproductive and developmental toxins. Linked to hormone disruption in males. Often hidden under the word "fragrance".',
+    concern: 'Reproductive and developmental toxins in animal studies. Dibutyl phthalate and DEHP are banned in EU cosmetics. Often present in products listing only "fragrance" without full disclosure.',
     hazardScore: 8,
     alternatives: 'Choose phthalate-free nail polishes; look for "fragrance-free" or products that disclose all fragrance ingredients.'
   },
   {
     names: ['triclosan', 'triclocarban'],
-    concern: 'Disrupts thyroid hormones; contributes to antibiotic resistance. Banned in OTC antiseptics in the US and restricted in the EU.',
+    concern: 'Disrupts thyroid hormone signalling in animal studies; contributes to antibiotic resistance. Banned in OTC antiseptic wash products in the US (FDA 2016). Restricted to ≤0.3% in specific rinse-off cosmetics in the EU.',
     hazardScore: 8,
-    alternatives: 'Plain soap and water is equally effective. Ethanol-based sanitisers for hand hygiene.'
+    alternatives: 'Plain soap and water is equally effective for hand hygiene. Ethanol-based sanitisers where needed.'
   },
   {
     names: ['oxybenzone', 'benzophenone-3'],
-    concern: 'UV filter that penetrates skin and has been detected in blood, urine and breast milk. Potential hormone disruptor. Toxic to coral reefs.',
-    hazardScore: 8,
-    alternatives: 'Mineral sunscreens with zinc oxide or titanium dioxide — stay on skin surface and do not penetrate.'
+    concern: 'UV filter that penetrates skin and has been detected in blood, urine, and breast milk at low concentrations. Classified as a potential endocrine disruptor by the EU SCCS. Restricted in EU sunscreens to ≤6% (face/body) or ≤0.5% (spray products).',
+    hazardScore: 7,
+    alternatives: 'Mineral sunscreens with zinc oxide or titanium dioxide remain on the skin surface and do not penetrate.'
   },
   {
     names: ['hydroquinone'],
-    concern: 'Can cause permanent skin darkening (ochronosis) with long-term use. Classified as a possible carcinogen. Prescription-only in the EU.',
+    concern: 'High concentrations can cause irreversible skin darkening (exogenous ochronosis). Classified as a possible carcinogen (IARC 2A). Banned in cosmetics sold to consumers in the EU; available only on prescription.',
     hazardScore: 9,
-    alternatives: 'Kojic acid, niacinamide, alpha-arbutin, or azelaic acid for skin brightening.'
+    alternatives: 'Kojic acid, niacinamide, alpha-arbutin, or azelaic acid for skin brightening — all with better safety profiles.'
   },
   {
     names: ['coal tar'],
-    concern: 'Known human carcinogen. Used in some dandruff shampoos and hair dyes. Banned in cosmetics in the EU except at very low concentrations.',
+    concern: 'Proven human carcinogen (IARC Group 1). Found in some dandruff shampoos and hair dyes. Prohibited in EU cosmetics except in hair dye products at strictly regulated concentrations.',
     hazardScore: 9,
-    alternatives: 'Zinc pyrithione or selenium sulfide shampoos for dandruff; natural hair dyes.'
+    alternatives: 'Zinc pyrithione or selenium sulfide shampoos for dandruff; ammonia-free synthetic hair dyes without coal tar derivatives.'
   },
   {
     names: ['lead acetate', 'lead'],
-    concern: 'Neurotoxic heavy metal with no safe level of exposure. Accumulates in bone over a lifetime. Found in some hair dyes.',
+    concern: 'Neurotoxic heavy metal. There is no safe level of lead exposure — it accumulates in bone tissue over a lifetime and impairs neurological development. Found in some hair dyes. Banned in cosmetics in the EU and US.',
     hazardScore: 10,
     alternatives: 'Henna-based hair dyes or modern ammonia-free synthetic dyes without metallic salts.'
   },
   {
     names: ['mercury', 'thimerosal', 'mercuric chloride'],
-    concern: 'Potent neurotoxin. Bioaccumulates in organs. Still found in some skin-lightening creams. Banned in cosmetics in the EU and US.',
+    concern: 'Potent neurotoxin that bioaccumulates in organs and the nervous system. Still found in some skin-lightening creams sold outside regulated markets. Banned in cosmetics in the EU and US.',
     hazardScore: 10,
-    alternatives: 'Regulated, mercury-free skin tone products; niacinamide or vitamin C for brightening.'
+    alternatives: 'Regulated, mercury-free products; niacinamide or vitamin C for brightening.'
   },
   {
     names: ['petroleum', 'petrolatum', 'mineral oil', 'paraffinum liquidum'],
-    concern: 'Cosmetic-grade petrolatum is considered safe, but lower grades may be contaminated with PAHs (polycyclic aromatic hydrocarbons). Source and refining quality matter.',
-    hazardScore: 4,
-    alternatives: 'Shea butter, coconut oil, jojoba oil, or squalane as natural occlusives.'
+    concern: 'Cosmetic-grade (fully refined) petrolatum is considered safe by the EU and FDA. Lower-grade or inadequately refined mineral oils may contain carcinogenic polycyclic aromatic hydrocarbons (PAHs). Refining quality is key.',
+    hazardScore: 2,
+    alternatives: 'Shea butter, coconut oil, jojoba oil, or squalane as natural occlusives if you prefer to avoid petroleum derivatives.'
   },
   {
     names: ['butylated hydroxyanisole', 'bha'],
-    concern: 'BHA is listed as a possible human carcinogen (IARC 2B). Endocrine disruptor. Restricted in EU cosmetics.',
+    concern: 'BHA is classified as a possible human carcinogen (IARC Group 2B) and a suspected endocrine disruptor. Restricted in EU cosmetics under Annex III.',
     hazardScore: 7,
     alternatives: 'Vitamin E (tocopherol) or rosemary extract as natural antioxidant preservatives.'
   },
   {
     names: ['dmdm hydantoin', 'imidazolidinyl urea', 'diazolidinyl urea', 'quaternium-15', 'bronopol', '2-bromo-2-nitropropane-1,3-diol'],
-    concern: 'Formaldehyde-releasing preservatives. Slowly release formaldehyde in the product, a known carcinogen and skin sensitiser.',
+    concern: 'Formaldehyde-releasing preservatives. These compounds slowly release formaldehyde during storage. Formaldehyde is a known human carcinogen (IARC Group 1) and a common skin sensitiser.',
     hazardScore: 8,
     alternatives: 'Products preserved with phenoxyethanol + ethylhexylglycerin, or naturally preserved formulas.'
   },
   {
     names: ['talc'],
-    concern: 'Naturally occurring mineral that may contain asbestos fibres if not cosmetic-grade certified. Associated with ovarian cancer risk in perineal use.',
-    hazardScore: 5,
-    alternatives: 'Cornstarch, arrowroot powder, or certified asbestos-free talc alternatives in body powders.'
+    concern: 'Cosmetic-grade talc certified free of asbestos is considered safe by regulators. Non-cosmetic-grade talc may contain asbestos fibres. Perineal (genital) use of talc-based powders has been associated with a modestly increased ovarian cancer risk in some epidemiological studies, though causality is not definitively established.',
+    hazardScore: 4,
+    alternatives: 'Cornstarch or arrowroot powder in body powders. Avoid use in the genital area as a precaution.'
   },
   {
     names: ['cyclomethicone', 'cyclotetrasiloxane', 'd4', 'cyclopentasiloxane', 'd5', 'cyclohexasiloxane', 'd6'],
-    concern: 'Cyclic siloxanes are persistent environmental pollutants and suspected endocrine disruptors. D4 and D5 restricted in rinse-off cosmetics in the EU.',
+    concern: 'Cyclic siloxanes D4 and D5 are persistent, bioaccumulative environmental pollutants and suspected endocrine disruptors. D4 and D5 are prohibited in rinse-off cosmetics (>0.1%) in the EU under REACH regulation.',
     hazardScore: 6,
-    alternatives: 'Dimethicone (linear silicone — lower risk) or plant-based silicone alternatives like Silicone-Free Dimethyl.'
+    alternatives: 'Linear dimethicone (lower environmental concern) or plant-based emollients such as squalane or jojoba esters.'
   }
 ]
 
@@ -108,51 +109,51 @@ const ALLERGEN_INGREDIENTS = [
 const CAUTION_INGREDIENTS = [
   {
     names: ['alcohol denat', 'denatured alcohol', 'sd alcohol'],
-    concern: 'Can dry and irritate sensitive or compromised skin with prolonged use.',
+    concern: 'Can cause dryness and irritation in sensitive or compromised skin with repeated use. Generally well tolerated at typical cosmetic concentrations in intact skin.',
     hazardScore: 3,
-    alternatives: 'Fatty alcohols (cetyl, stearyl) are skin-compatible; look for low alcohol concentrations.'
+    alternatives: 'Fatty alcohols (cetyl alcohol, stearyl alcohol) are non-drying and skin-compatible alternatives.'
   },
   {
     names: ['retinol', 'retinyl palmitate', 'retinyl acetate'],
-    concern: 'Increases photosensitivity — always use SPF during the day. Avoid during pregnancy at therapeutic doses.',
+    concern: 'Increases photosensitivity — daily SPF use is essential. High-dose prescription retinoids are teratogenic; cosmetic retinol concentrations are much lower, but precautionary avoidance during pregnancy is widely advised.',
     hazardScore: 3,
-    alternatives: 'Bakuchiol is a plant-derived retinol alternative safe during pregnancy and less irritating.'
+    alternatives: 'Bakuchiol is a plant-derived alternative with comparable anti-ageing evidence, lower irritation, and considered safe in pregnancy.'
   },
   {
     names: ['glycolic acid', 'lactic acid', 'alpha hydroxy acid', 'aha'],
-    concern: 'Exfoliating acids increase sun sensitivity. Can cause stinging or peeling if overused.',
+    concern: 'Chemical exfoliants that increase UV sensitivity by thinning the outer skin layer. Can cause stinging, peeling, or post-inflammatory hyperpigmentation if overused, especially in darker skin tones.',
     hazardScore: 3,
-    alternatives: 'Use SPF daily. Start with low concentrations (5–8%). PHAs (polyhydroxy acids) are gentler for sensitive skin.'
+    alternatives: 'Use SPF 30+ daily. Start with concentrations ≤8%. PHAs (polyhydroxy acids) are gentler and suitable for sensitive skin.'
   },
   {
-    names: ['salicylic acid', 'beta hydroxy acid', 'bha'],
-    concern: 'Can cause irritation at high concentrations. High doses are not recommended during pregnancy.',
+    names: ['salicylic acid', 'beta hydroxy acid'],
+    concern: 'Can cause irritation or dryness at concentrations above 2%. Systemic absorption from high-concentration or large-area use is a theoretical concern in pregnancy; precautionary avoidance of high-dose products is advised.',
     hazardScore: 3,
-    alternatives: 'Willow bark extract (lower concentration natural source); niacinamide for pore minimising.'
+    alternatives: 'Willow bark extract (lower-concentration natural source); niacinamide for pore-minimising effects without exfoliation.'
   },
   {
     names: ['phenoxyethanol'],
-    concern: 'Mild preservative, generally well tolerated. Can cause allergic reactions in some individuals. Restricted in leave-on products for infants under 3 in France.',
+    concern: 'Widely used preservative considered safe by the EU SCCS at up to 1%. Can cause allergic contact reactions in a small proportion of individuals. France advises against use in leave-on products for children under 3.',
     hazardScore: 3,
-    alternatives: 'Generally considered one of the safer synthetic preservatives; multi-functional alternatives include ethylhexylglycerin.'
+    alternatives: 'Generally one of the safer synthetic preservatives available. Ethylhexylglycerin is often used alongside it to reduce the required concentration.'
   },
   {
     names: ['methylisothiazolinone', 'mi', 'methylchloroisothiazolinone', 'mci'],
-    concern: 'Common skin sensitiser and allergen. Banned in EU leave-on cosmetics since 2014; restricted in rinse-off products.',
+    concern: 'A potent skin sensitiser and one of the most common causes of allergic contact dermatitis in Europe. MI is banned in EU leave-on cosmetics (since 2014) and restricted to 0.0015% (15 ppm) in rinse-off products.',
     hazardScore: 7,
-    alternatives: 'Products preserved with phenoxyethanol, sodium benzoate or natural preservative systems.'
+    alternatives: 'Products preserved with phenoxyethanol, sodium benzoate, or natural preservation systems.'
   },
   {
     names: ['titanium dioxide'],
-    concern: 'Safe in solid form as a UV filter. Concerns arise around nano-sized particles in sprays that may be inhaled.',
+    concern: 'Safe and effective UV filter in solid (non-nano) form. Nano-form titanium dioxide is classified as a possible carcinogen (IARC 2B) when inhaled. Risk is specific to spray/powder formats; cream and lotion formulations pose no inhalation risk.',
     hazardScore: 2,
-    alternatives: 'Non-spray sunscreen formats using non-nano titanium dioxide or zinc oxide are safest.'
+    alternatives: 'Choose lotion or cream sunscreen formats over sprays or loose powders. Non-nano zinc oxide is an alternative mineral UV filter.'
   },
   {
     names: ['essential oils', 'tea tree oil', 'lavender oil', 'peppermint oil', 'eucalyptus oil', 'clove oil'],
-    concern: 'Natural does not mean safe — essential oils are among the most common causes of allergic contact dermatitis.',
+    concern: 'Natural origin does not imply safety. Essential oils are among the most frequent causes of allergic contact dermatitis in cosmetics. Certain oils (e.g. clove, cinnamon) are strong irritants even at low concentrations.',
     hazardScore: 4,
-    alternatives: 'Fragrance-free formulations or products scented only with listed, allergen-free aromatic compounds.'
+    alternatives: 'Fragrance-free formulations, or products scented only with fully disclosed, low-allergen aromatic compounds.'
   }
 ]
 
@@ -188,7 +189,7 @@ export function analyseIngredients(text) {
     }
 
     if (isAllergen) {
-      return { name: raw, rating: 'caution', isAllergen: true, concern: 'Listed EU fragrance allergen (Annex III). May cause allergic reactions in sensitive individuals.', hazardScore: 4, alternatives: 'Choose fragrance-free products or those that fully disclose individual fragrance components.' }
+      return { name: raw, rating: 'caution', isAllergen: true, concern: 'Listed EU fragrance allergen (Cosmetics Regulation Annex III). Must be declared on labels above 0.01% in leave-on and 0.1% in rinse-off products. May cause allergic reactions in sensitised individuals.', hazardScore: 4, alternatives: 'Choose fragrance-free products or those that fully disclose individual fragrance components.' }
     }
 
     return { name: raw, rating: 'safe', isAllergen: false, concern: null, hazardScore: null, alternatives: null }
