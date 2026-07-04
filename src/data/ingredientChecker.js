@@ -38,9 +38,9 @@ const HARMFUL_INGREDIENTS = [
   },
   {
     names: ['phthalates', 'dibutyl phthalate', 'diethylhexyl phthalate', 'dimethyl phthalate'],
-    concern: 'Reproductive and developmental toxins in animal studies. Dibutyl phthalate and DEHP are banned in EU cosmetics. Often present in products listing only “fragrance” without full disclosure.',
+    concern: 'Reproductive and developmental toxins in animal studies. Dibutyl phthalate and DEHP are banned in EU cosmetics. Often present in products listing only "fragrance" without full disclosure.',
     hazardScore: 8,
-    alternatives: 'Choose phthalate-free nail polishes; look for “fragrance-free” or products that disclose all fragrance ingredients.',
+    alternatives: 'Choose phthalate-free nail polishes; look for "fragrance-free" or products that disclose all fragrance ingredients.',
     sources: [
       { label: 'EU Cosmetics Regulation — Annex II (DBP, DEHP prohibited)', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401' },
       { label: 'ECHA — Phthalates as substances of very high concern', url: 'https://echa.europa.eu/substances-of-very-high-concern-identification/-/dislist/details/0b0236e180d451e1' }
@@ -224,12 +224,14 @@ const CAUTION_INGREDIENTS = [
   },
   {
     names: ['methylisothiazolinone', 'mi', 'methylchloroisothiazolinone', 'mci'],
-    concern: 'A potent skin sensitiser and one of the most common causes of allergic contact dermatitis in Europe. MI is banned in EU leave-on cosmetics (since 2014) and restricted to 0.0015% in rinse-off products.',
+    concern: 'A potent skin sensitiser and one of the most common causes of allergic contact dermatitis in Europe. The SCCS concluded in 2014 that no safe concentration for MI in leave-on cosmetics could be established. The EU subsequently banned MI in leave-on products (Commission Regulation 2016/1198, effective 2017) and tightened the rinse-off limit from 0.01% to 0.0015% (15 ppm) under Commission Regulation 2017/1224.',
     hazardScore: 7,
-    alternatives: 'Products preserved with phenoxyethanol, sodium benzoate, or natural preservation systems.',
+    alternatives: 'Products preserved with phenoxyethanol, sodium benzoate, or natural preservation systems have a lower sensitisation concern, though no preservative is universally risk-free.',
     sources: [
-      { label: 'SCCS — Opinion on methylisothiazolinone (2014)', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_166.pdf' },
-      { label: 'EU Commission decision — MI ban in leave-on products', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32014R1004' }
+      { label: 'SCCS — Opinion on MI (SCCS/1521/13, 2014): no safe leave-on concentration', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_145.pdf' },
+      { label: 'SCCS — Updated opinion on MI (SCCS/1557/15, 2016)', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_178.pdf' },
+      { label: 'Commission Regulation (EU) 2016/1198 — MI banned in leave-on products', url: 'https://www.legislation.gov.uk/eur/2016/1198/introduction' },
+      { label: 'Commission Regulation (EU) 2017/1224 — rinse-off limit reduced to 0.0015%', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32017R1224' }
     ]
   },
   {
