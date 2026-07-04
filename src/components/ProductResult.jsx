@@ -23,24 +23,45 @@ export default function ProductResult({ product, onBack }) {
     return groups
   }, [analysed])
 
+  // Overall label logic:
+  // - Any harmful ingredient → Harmful
+  // - Any allergen OR any caution-flagged ingredient → Use with Caution
+  // - Otherwise → Generally Safe
+  // "caution > 2" threshold removed — there is no evidence basis for ignoring 1–2 caution flags
   const overallScore = useMemo(() => {
     if (!hasIngredients) return 'unknown'
     if (harmful.length > 0) return 'harmful'
-    if (allergens.length > 0 || caution.length > 2) return 'caution'
+    if (allergens.length > 0 || caution.length > 0) return 'caution'
     return 'safe'
   }, [hasIngredients, harmful, allergens, caution])
 
+  // Human-readable explanation of why the label was assigned
+  const scoreReason = useMemo(() => {
+    if (!hasIngredients) return 'No ingredient list available — safety cannot be assessed.'
+    if (overallScore === 'harmful') {
+      return `${harmful.length} ingredient${harmful.length > 1 ? 's' : ''} matched a known or suspected hazard. See details below.`
+    }
+    if (overallScore === 'caution') {
+      const parts = []
+      if (allergens.length > 0) parts.push(`${allergens.length} EU-listed fragrance allergen${allergens.length > 1 ? 's' : ''} (affects sensitised individuals)`)
+      if (caution.length > 0)   parts.push(`${caution.length} ingredient${caution.length > 1 ? 's' : ''} with a use-with-caution flag`)
+      return parts.join(' · ') + '. See details below.'
+    }
+    const unknownNote = unknown.length > 0 ? ` ${unknown.length} ingredient${unknown.length > 1 ? 's' : ''} were not in our database and could not be assessed.` : ''
+    return `No harmful or flagged ingredients detected in our database.${unknownNote}`
+  }, [overallScore, hasIngredients, harmful, allergens, caution, unknown])
+
   const scoreConfig = {
-    safe:    { emoji: '✅', label: 'Generally Safe',              color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
-    caution: { emoji: '⚠️', label: 'Use with Caution',           color: 'text-yellow-400',  bg: 'bg-yellow-500/10 border-yellow-500/30'  },
-    harmful: { emoji: '🚫', label: 'Harmful Ingredients Detected', color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/30'        },
-    unknown: { emoji: '❓', label: 'Ingredients Not Available',   color: 'text-slate-400',  bg: 'bg-slate-700/40 border-slate-600/40'    }
+    safe:    { emoji: '✅', label: 'Generally Safe',               color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+    caution: { emoji: '⚠️', label: 'Use with Caution',            color: 'text-yellow-400',  bg: 'bg-yellow-500/10 border-yellow-500/30'  },
+    harmful: { emoji: '�deab', label: 'Harmful Ingredients Detected', color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/30'        },
+    unknown: { emoji: '❓', label: 'Ingredients Not Available',    color: 'text-slate-400',  bg: 'bg-slate-700/40 border-slate-600/40'    }
   }
   const score = scoreConfig[overallScore]
   const imageUrl = product.image_url || product.image_front_url
 
   const handleShare = async () => {
-    const text = `IngrediClear result for ${product.product_name || 'this product'}:\n${score.emoji} ${score.label}\n${hasIngredients ? `${harmful.length} harmful · ${allergens.length} allergens · ${caution.length} caution flags` : 'No ingredient data in database.'}\n\nhttps://github.com/msegt/IngrediClear`
+    const text = `IngrediClear result for ${product.product_name || 'this product'}:\n${score.emoji} ${score.label}\n${scoreReason}\n\nhttps://github.com/msegt/IngrediClear`
     if (navigator.share) {
       await navigator.share({ title: 'IngrediClear', text })
     } else {
@@ -94,17 +115,13 @@ export default function ProductResult({ product, onBack }) {
       {/* Overall score */}
       <div className={`card p-4 border ${score.bg} flex items-center gap-4`}>
         <span className="text-4xl">{score.emoji}</span>
-        <div>
+        <div className="flex-1 min-w-0">
           <p className={`font-bold text-lg ${score.color}`}>{score.label}</p>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {hasIngredients
-              ? `${harmful.length} harmful · ${allergens.length} allergens · ${caution.length} caution flags`
-              : 'Cannot assess safety without an ingredient list.'}
-          </p>
+          <p className="text-xs text-slate-400 mt-1 leading-relaxed">{scoreReason}</p>
         </div>
       </div>
 
-      {/* Stat pills — only shown when we have ingredient data */}
+      {/* Stat pills */}
       {hasIngredients && (
         <div className="grid grid-cols-4 gap-2">
           {[
@@ -121,8 +138,24 @@ export default function ProductResult({ product, onBack }) {
         </div>
       )}
 
-      {hasIngredients && harmful.length > 0   && <IngredientSection title="🚫 Harmful Ingredients" items={harmful} />}
-      {hasIngredients && allergens.length > 0  && <IngredientSection title="🤧 Allergens" items={allergens} />}
+      {/* Unknown ingredients disclaimer */}
+      {hasIngredients && unknown.length > 0 && (
+        <div className="card p-3 border border-slate-600/40 bg-slate-700/20 flex gap-3 items-start">
+          <span className="text-lg mt-0.5">❓</span>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            <span className="font-semibold text-slate-300">{unknown.length} ingredient{unknown.length > 1 ? 's' : ''} not in our database</span> and could not be assessed. This does not mean they are safe — it means we have no data on them.
+          </p>
+        </div>
+      )}
+
+      {hasIngredients && harmful.length > 0   && <IngredientSection title="�deab Harmful Ingredients" items={harmful} />}
+      {hasIngredients && allergens.length > 0  && (
+        <IngredientSection
+          title="🤧 Allergens"
+          items={allergens}
+          note="EU-listed fragrance allergens that must be declared on product labels. These cause reactions in sensitised individuals — they are not a risk for everyone."
+        />
+      )}
       {hasIngredients && caution.length > 0    && <IngredientSection title="⚠️ Use with Caution" items={caution} />}
 
       {hasIngredients && (safe.length > 0 || unknown.length > 0) && (
@@ -162,17 +195,18 @@ export default function ProductResult({ product, onBack }) {
       )}
 
       <p className="text-center text-xs text-slate-600 px-4">
-        Data from Open Beauty Facts (CC BY-SA). Not medical advice — consult a dermatologist.
+        Data from Open Beauty Facts (CC BY-SA). Not medical advice — consult a dermatologist for personal guidance.
       </p>
     </div>
   )
 }
 
-function IngredientSection({ title, items }) {
+function IngredientSection({ title, items, note }) {
   return (
     <div className="card">
       <div className="px-4 pt-4 pb-2">
         <h3 className="font-semibold text-white text-sm">{title}</h3>
+        {note && <p className="text-xs text-slate-400 mt-1 leading-relaxed">{note}</p>}
       </div>
       <div className="px-4 pb-2">
         {items.map((item, i) => <IngredientRow key={i} item={item} />)}
