@@ -36,11 +36,15 @@ export default function FoodResult({ product, onBack }) {
         </div>
       </div>
 
-      <NutritionGauge score={analysis.healthScore} protein={analysis.nutrients.protein} />
+      <NutritionGauge
+        score={analysis.healthScore}
+        protein={analysis.nutrients.protein}
+        scoreReasons={analysis.scoreReasons}
+      />
 
       {analysis.allergens.length > 0 && (
         <div className="card p-4 border border-orange-500/30 bg-orange-500/10">
-          <p className="text-sm font-semibold text-orange-400 mb-2">⚠️ Common allergens</p>
+          <p className="text-sm font-semibold text-orange-400 mb-2">⚠️ Contains allergens</p>
           <div className="flex flex-wrap gap-2">
             {analysis.allergens.map((a, i) => (
               <span key={i} className="text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">{a.label}</span>
@@ -55,11 +59,9 @@ export default function FoodResult({ product, onBack }) {
           <div className="flex flex-col gap-2">
             {analysis.flags.map((flag, i) => (
               <div key={i} className={`rounded-xl p-3 border ${
-                flag.level === 'high'
-                  ? 'bg-red-500/10 border-red-500/30'
-                  : flag.level === 'moderate'
-                    ? 'bg-yellow-500/10 border-yellow-500/30'
-                    : 'bg-emerald-500/10 border-emerald-500/30'
+                flag.level === 'high'     ? 'bg-red-500/10 border-red-500/30' :
+                flag.level === 'moderate' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                                            'bg-emerald-500/10 border-emerald-500/30'
               }`}>
                 <p className="text-sm font-semibold text-white">{flag.label}</p>
                 <p className="text-xs text-slate-400 mt-1">{flag.detail}</p>
@@ -85,10 +87,10 @@ export default function FoodResult({ product, onBack }) {
 
       <div className="grid grid-cols-2 gap-2">
         {[
-          { label: 'Sugar', value: analysis.nutrients.sugar, unit: 'g/100g' },
-          { label: 'Salt', value: analysis.nutrients.salt, unit: 'g/100g' },
+          { label: 'Sugar',    value: analysis.nutrients.sugar,        unit: 'g/100g' },
+          { label: 'Salt',     value: analysis.nutrients.salt,         unit: 'g/100g' },
           { label: 'Sat. fat', value: analysis.nutrients.saturatedFat, unit: 'g/100g' },
-          { label: 'Fibre', value: analysis.nutrients.fiber, unit: 'g/100g' }
+          { label: 'Fibre',    value: analysis.nutrients.fiber,        unit: 'g/100g' }
         ].map(item => (
           <div key={item.label} className="card p-3 text-center">
             <p className="text-xs text-slate-400">{item.label}</p>
@@ -99,7 +101,7 @@ export default function FoodResult({ product, onBack }) {
       </div>
 
       <p className="text-center text-xs text-slate-600 px-4">
-        Data from Open Food Facts. This is informational only and not medical advice.
+        Data from Open Food Facts (ODbL). Informational only — not medical or dietary advice.
       </p>
     </div>
   )

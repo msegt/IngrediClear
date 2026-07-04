@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/browser'
 
-export default function Scanner({ onDetected }) {
+export default function Scanner({ onDetected, productType = 'cosmetics' }) {
   const videoRef = useRef(null)
   const readerRef = useRef(null)
   const controlsRef = useRef(null)
-  const [status, setStatus] = useState('initializing') // initializing | active | error
+  const [status, setStatus] = useState('initializing')
   const [errorMsg, setErrorMsg] = useState('')
   const detectedRef = useRef(false)
 
@@ -18,7 +18,6 @@ export default function Scanner({ onDetected }) {
         setErrorMsg('No camera found. Use manual entry below.')
         return
       }
-      // Prefer back camera
       const device = devices.find(d =>
         d.label.toLowerCase().includes('back') ||
         d.label.toLowerCase().includes('rear') ||
@@ -45,20 +44,20 @@ export default function Scanner({ onDetected }) {
 
   useEffect(() => {
     startScanner()
-    return () => {
-      controlsRef.current?.stop()
-    }
+    return () => { controlsRef.current?.stop() }
   }, [startScanner])
+
+  const hintText = productType === 'food'
+    ? 'Point camera at a barcode on your food product'
+    : 'Point camera at a barcode on your cosmetic product'
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Scanner viewport */}
       <div className="relative w-full aspect-[4/3] bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 scanner-container">
         <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
 
         {status === 'active' && (
           <>
-            {/* Corner guides */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="relative w-48 h-48">
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-brand-400 rounded-tl-md" />
@@ -68,7 +67,6 @@ export default function Scanner({ onDetected }) {
                 <div className="scan-line" />
               </div>
             </div>
-            {/* Overlay overlay */}
             <div className="absolute inset-0 bg-slate-950/30" style={{
               maskImage: 'radial-gradient(ellipse 55% 45% at 50% 50%, transparent 60%, black 100%)',
               WebkitMaskImage: 'radial-gradient(ellipse 55% 45% at 50% 50%, transparent 60%, black 100%)'
@@ -91,9 +89,7 @@ export default function Scanner({ onDetected }) {
         )}
       </div>
 
-      <p className="text-center text-xs text-slate-500">
-        Point camera at a barcode on your cosmetic product
-      </p>
+      <p className="text-center text-xs text-slate-500">{hintText}</p>
     </div>
   )
 }

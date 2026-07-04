@@ -1,19 +1,22 @@
 import React from 'react'
 import { clearHistory } from '../data/history.js'
 
-export default function ScanHistory({ history, onSelect }) {
+export default function ScanHistory({ history, onSelect, productType = 'cosmetics' }) {
   const [items, setItems] = React.useState(history)
 
-  const handleClear = () => {
-    setItems(clearHistory())
-  }
+  React.useEffect(() => { setItems(history) }, [history])
+
+  const handleClear = () => { setItems(clearHistory()) }
+
+  const fallbackIcon = productType === 'food' ? '🍽️' : '🧴'
+  const emptyLabel = productType === 'food' ? 'food products' : 'cosmetics'
 
   if (!items.length) {
     return (
       <div className="card p-8 flex flex-col items-center text-center gap-3">
         <span className="text-4xl">🕒</span>
         <p className="font-semibold text-white">No scan history yet</p>
-        <p className="text-sm text-slate-400">Products you scan will appear here for quick re-access.</p>
+        <p className="text-sm text-slate-400">{emptyLabel.charAt(0).toUpperCase() + emptyLabel.slice(1)} you scan will appear here for quick re-access.</p>
       </div>
     )
   }
@@ -32,7 +35,7 @@ export default function ScanHistory({ history, onSelect }) {
         >
           {item.image
             ? <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-contain bg-slate-800 flex-shrink-0" />
-            : <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🧴</div>
+            : <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">{fallbackIcon}</div>
           }
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">{item.name || 'Unknown Product'}</p>

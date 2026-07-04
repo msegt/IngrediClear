@@ -13,22 +13,22 @@ import { saveToHistory, getHistory } from './data/history.js'
 
 const PRODUCT_TYPES = [
   { id: 'cosmetics', label: '🧴 Cosmetics' },
-  { id: 'food', label: '🍽️ Food' }
+  { id: 'food',      label: '🍽️ Food' }
 ]
 
 const TABS = [
-  { id: 'scan', label: '📷 Scan' },
-  { id: 'manual', label: '⌨️ Enter' },
+  { id: 'scan',    label: '📷 Scan' },
+  { id: 'manual',  label: '⌨️ Enter' },
   { id: 'history', label: '🕒 History' }
 ]
 
 export default function App() {
   const [productType, setProductType] = useState('cosmetics')
-  const [activeTab, setActiveTab] = useState('scan')
-  const [product, setProduct] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [history, setHistory] = useState(getHistory())
+  const [activeTab, setActiveTab]     = useState('scan')
+  const [product, setProduct]         = useState(null)
+  const [loading, setLoading]         = useState(false)
+  const [error, setError]             = useState(null)
+  const [history, setHistory]         = useState(getHistory())
 
   const handleBarcode = async (barcode) => {
     if (!barcode || loading) return
@@ -44,10 +44,10 @@ export default function App() {
       setProduct({ ...data, _type: productType })
       const updated = saveToHistory({
         barcode,
-        name: data.product_name,
+        name:  data.product_name,
         brand: data.brands,
         image: data.image_front_url || data.image_url,
-        type: productType
+        type:  productType
       })
       setHistory(updated)
     } catch (err) {
@@ -57,10 +57,9 @@ export default function App() {
     }
   }
 
-  const handleReset = () => {
-    setProduct(null)
-    setError(null)
-  }
+  const handleReset = () => { setProduct(null); setError(null) }
+
+  const filteredHistory = history.filter(h => h.type === productType)
 
   return (
     <div className="min-h-screen flex flex-col max-w-lg mx-auto">
@@ -101,9 +100,9 @@ export default function App() {
           </div>
 
           <div className="px-4 py-4">
-            {activeTab === 'scan' && <Scanner onDetected={handleBarcode} />}
-            {activeTab === 'manual' && <ManualEntry onSubmit={handleBarcode} productType={productType} />}
-            {activeTab === 'history' && <ScanHistory history={history.filter(h => h.type === productType)} onSelect={handleBarcode} />}
+            {activeTab === 'scan'    && <Scanner    onDetected={handleBarcode} productType={productType} />}
+            {activeTab === 'manual'  && <ManualEntry onSubmit={handleBarcode}  productType={productType} />}
+            {activeTab === 'history' && <ScanHistory history={filteredHistory} onSelect={handleBarcode} productType={productType} />}
           </div>
         </>
       )}
@@ -123,7 +122,7 @@ export default function App() {
       {product && !loading && (
         <div className="flex-1 px-4 py-4 animate-slide-up">
           {product._type === 'food'
-            ? <FoodResult product={product} onBack={handleReset} />
+            ? <FoodResult    product={product} onBack={handleReset} />
             : <ProductResult product={product} onBack={handleReset} />}
         </div>
       )}
