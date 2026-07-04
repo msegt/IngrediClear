@@ -2,18 +2,6 @@ import React, { useState } from 'react'
 import { searchProductsByName } from '../api/openBeautyFacts.js'
 import { searchFoodProductsByName } from '../api/openFoodFacts.js'
 
-const DEMO_COSMETICS = [
-  { name: 'Dove Intensive Cream',    code: '8712561614133' },
-  { name: 'Nivea Soft Moisturising', code: '4005808224067' },
-  { name: "L'Oréal Elvive Shampoo", code: '3600522851264' }
-]
-
-const DEMO_FOOD = [
-  { name: 'Nutella',                code: '3017620422003' },
-  { name: 'Coca-Cola Classic 330ml',code: '5000112546415' },
-  { name: 'Kellogg’s Corn Flakes',  code: '5010029013001' }
-]
-
 export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
   const [mode, setMode]               = useState('barcode')
   const [value, setValue]             = useState('')
@@ -22,7 +10,6 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
   const [searchError, setSearchError] = useState('')
 
   const isFood = productType === 'food'
-  const demoProducts = isFood ? DEMO_FOOD : DEMO_COSMETICS
   const namePlaceholder = isFood ? 'e.g. Nutella, Greek yogurt, oat milk' : 'e.g. Nivea Sun Cream SPF50'
   const nameHint = isFood
     ? 'Search by food name, brand, or type.'
@@ -151,27 +138,6 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
                   {product.categories && <p className="text-xs text-slate-600 truncate">{product.categories.split(',')[0]}</p>}
                 </div>
                 <span className="text-slate-600 flex-shrink-0">→</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Demo products */}
-      {mode === 'barcode' && results.length === 0 && (
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-slate-300 mb-3">
-            {isFood ? '🍽️ Try a demo food product' : '🧪 Try a demo cosmetic'}
-          </h3>
-          <div className="flex flex-col gap-2">
-            {demoProducts.map(item => (
-              <button
-                key={item.code}
-                onClick={() => { setValue(item.code); onSubmit(item.code) }}
-                className="flex items-center justify-between px-4 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl transition text-left"
-              >
-                <span className="text-sm text-slate-200">{item.name}</span>
-                <span className="text-xs text-slate-500 font-mono">{item.code}</span>
               </button>
             ))}
           </div>
