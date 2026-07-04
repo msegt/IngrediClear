@@ -1,15 +1,18 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Header from './components/Header.jsx'
 import Scanner from './components/Scanner.jsx'
 import ManualEntry from './components/ManualEntry.jsx'
 import ProductResult from './components/ProductResult.jsx'
 import LoadingSpinner from './components/LoadingSpinner.jsx'
 import ErrorCard from './components/ErrorCard.jsx'
+import ScanHistory from './components/ScanHistory.jsx'
 import { fetchProduct } from './api/openBeautyFacts.js'
+import { saveToHistory, getHistory } from './data/history.js'
 
 const TABS = [
-  { id: 'scan', label: '📷 Scan', icon: '📷' },
-  { id: 'manual', label: '⌨️ Enter', icon: '⌨️' }
+  { id: 'scan', label: '📷 Scan' },
+  { id: 'manual', label: '⌨️ Enter' },
+  { id: 'history', label: '🕒 History' }
 ]
 
 export default function App() {
@@ -17,6 +20,7 @@ export default function App() {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [history, setHistory] = useState(getHistory())
 
   const handleBarcode = async (barcode) => {
     if (!barcode || loading) return
@@ -26,6 +30,8 @@ export default function App() {
     try {
       const data = await fetchProduct(barcode)
       setProduct(data)
+      const updated = saveToHistory({ barcode, name: data.product_name, brand: data.brands, image: data.image_front_url || data.image_url })
+      setHistory(updated)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -44,8 +50,7 @@ export default function App() {
 
       {!product && !loading && (
         <>
-          {/* Tab switcher */}
-          <div className="flex gap-2 mx-4 mt-4 p-1 bg-slate-900 rounded-xl border border-slate-800">
+          <div className="flex gap-1 mx-4 mt-4 p-1 bg-slate-900 rounded-xl border border-slate-800">
             {TABS.map(tab => (
               <button
                 key={tab.id}
@@ -62,11 +67,9 @@ export default function App() {
           </div>
 
           <div className="flex-1 px-4 py-4">
-            {activeTab === 'scan' ? (
-              <Scanner onDetected={handleBarcode} />
-            ) : (
-              <ManualEntry onSubmit={handleBarcode} />
-            )}
+            {activeTab === 'scan' && <Scanner onDetected={handleBarcode} />}
+            {activeTab === 'manual' && <ManualEntry onSubmit={handleBarcode} />}
+            {activeTab === 'history' && <ScanHistory history={history} onSelect={handleBarcode} />}
           </div>
         </>
       )}
@@ -89,7 +92,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Bottom safe area spacer */}
       <div className="h-4" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} />
     </div>
   )
