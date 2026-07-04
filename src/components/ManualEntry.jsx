@@ -1,18 +1,32 @@
 import React, { useState } from 'react'
 import { searchProductsByName } from '../api/openBeautyFacts.js'
+import { searchFoodProductsByName } from '../api/openFoodFacts.js'
 
-const DEMO_PRODUCTS = [
-  { name: 'Dove Intensive Cream', code: '8712561614133' },
+const DEMO_COSMETICS = [
+  { name: 'Dove Intensive Cream',    code: '8712561614133' },
   { name: 'Nivea Soft Moisturising', code: '4005808224067' },
   { name: "L'Oréal Elvive Shampoo", code: '3600522851264' }
 ]
 
+const DEMO_FOOD = [
+  { name: 'Nutella',                code: '3017620422003' },
+  { name: 'Coca-Cola Classic 330ml',code: '5000112546415' },
+  { name: 'Kellogg’s Corn Flakes',  code: '5010029013001' }
+]
+
 export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
-  const [mode, setMode]           = useState('barcode')
-  const [value, setValue]         = useState('')
-  const [results, setResults]     = useState([])
-  const [searching, setSearching] = useState(false)
+  const [mode, setMode]               = useState('barcode')
+  const [value, setValue]             = useState('')
+  const [results, setResults]         = useState([])
+  const [searching, setSearching]     = useState(false)
   const [searchError, setSearchError] = useState('')
+
+  const isFood = productType === 'food'
+  const demoProducts = isFood ? DEMO_FOOD : DEMO_COSMETICS
+  const namePlaceholder = isFood ? 'e.g. Nutella, Greek yogurt, oat milk' : 'e.g. Nivea Sun Cream SPF50'
+  const nameHint = isFood
+    ? 'Search by food name, brand, or type.'
+    : 'Search by product name, brand, or type.'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -26,7 +40,9 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
       setSearchError('')
       setResults([])
       try {
-        const products = await searchProductsByName(trimmed)
+        const products = isFood
+          ? await searchFoodProductsByName(trimmed)
+          : await searchProductsByName(trimmed)
         setResults(products)
       } catch (err) {
         setSearchError(err.message)
@@ -38,13 +54,10 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
 
   const handleSelectResult = (product) => onSubmit(product.code || product.id)
 
-  const namePlaceholder = productType === 'food' ? 'e.g. Nutella, Greek yogurt, oat milk' : 'e.g. Nivea Sun Cream SPF50'
-  const nameHint = productType === 'food'
-    ? 'Search by food name, brand, or type.'
-    : 'Search by product name, brand, or type (e.g. “nivea sun cream”).'
-
   return (
     <div className="flex flex-col gap-4">
+
+      {/* Mode toggle */}
       <div className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800">
         {[{ id: 'barcode', label: '📶 Barcode number' }, { id: 'name', label: '🔍 Product name' }].map(m => (
           <button
@@ -61,6 +74,7 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
         ))}
       </div>
 
+      {/* Input card */}
       <div className="card p-5">
         {mode === 'barcode' ? (
           <>
@@ -71,7 +85,7 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
                 inputMode="numeric"
                 value={value}
                 onChange={e => setValue(e.target.value)}
-                placeholder="e.g. 3017620422003"
+                placeholder={isFood ? 'e.g. 3017620422003' : 'e.g. 3600523462452'}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition text-lg tracking-widest"
               />
               <button type="submit" disabled={value.trim().length < 6} className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
@@ -91,23 +105,33 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
                 autoComplete="off"
               />
-              <button type="submit" disabled={value.trim().length < 2 || searching} className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                {searching ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Searching…</> : 'Search →'}
+              <button
+                type="submit"
+                disabled={value.trim().length < 2 || searching}
+                className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {searching
+                  ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Searching…</>
+                  : 'Search →'}
               </button>
             </form>
           </>
         )}
       </div>
 
+      {/* Search error */}
       {searchError && (
         <div className="card p-4 border border-red-500/30 bg-red-500/10">
           <p className="text-sm text-red-400">{searchError}</p>
         </div>
       )}
 
+      {/* Search results */}
       {results.length > 0 && (
         <div className="card">
-          <p className="text-xs font-semibold text-slate-400 px-4 pt-4 pb-2">{results.length} results found — tap to continue</p>
+          <p className="text-xs font-semibold text-slate-400 px-4 pt-4 pb-2">
+            {results.length} result{results.length !== 1 ? 's' : ''} found — tap to check
+          </p>
           <div className="flex flex-col pb-2">
             {results.map((product, i) => (
               <button
@@ -117,7 +141,9 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
               >
                 {(product.image_front_url || product.image_url)
                   ? <img src={product.image_front_url || product.image_url} alt="" className="w-12 h-12 rounded-lg object-contain bg-slate-800 flex-shrink-0" />
-                  : <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">🧴</div>
+                  : <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">
+                      {isFood ? '🍽️' : '🧴'}
+                    </div>
                 }
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{product.product_name}</p>
@@ -131,11 +157,14 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
         </div>
       )}
 
-      {productType === 'cosmetics' && mode === 'barcode' && results.length === 0 && (
+      {/* Demo products */}
+      {mode === 'barcode' && results.length === 0 && (
         <div className="card p-5">
-          <h3 className="text-sm font-semibold text-slate-300 mb-3">🧪 Try a demo product</h3>
+          <h3 className="text-sm font-semibold text-slate-300 mb-3">
+            {isFood ? '🍽️ Try a demo food product' : '🧪 Try a demo cosmetic'}
+          </h3>
           <div className="flex flex-col gap-2">
-            {DEMO_PRODUCTS.map(item => (
+            {demoProducts.map(item => (
               <button
                 key={item.code}
                 onClick={() => { setValue(item.code); onSubmit(item.code) }}
