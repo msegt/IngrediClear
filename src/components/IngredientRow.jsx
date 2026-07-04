@@ -20,6 +20,27 @@ function HazardBar({ score }) {
   )
 }
 
+function SourceLinks({ sources }) {
+  if (!sources || sources.length === 0) return null
+  return (
+    <div className="mt-1.5 flex flex-col gap-1">
+      <p className="text-xs font-semibold text-slate-500">Evidence</p>
+      {sources.map((s, i) => (
+        <a
+          key={i}
+          href={s.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2 leading-relaxed"
+        >
+          🔗 {s.label}
+        </a>
+      ))}
+    </div>
+  )
+}
+
 export default function IngredientRow({ item }) {
   const [expanded, setExpanded] = useState(false)
   const config = RATING_CONFIG[item.rating] || RATING_CONFIG.unknown
@@ -57,6 +78,7 @@ export default function IngredientRow({ item }) {
                 <p className="text-xs text-slate-300 leading-relaxed">{item.alternatives}</p>
               </div>
             )}
+            <SourceLinks sources={item.sources} />
           </div>
         )}
       </div>

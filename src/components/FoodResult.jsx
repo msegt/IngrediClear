@@ -2,6 +2,26 @@ import React from 'react'
 import { analyseFoodProduct } from '../data/foodChecker.js'
 import NutritionGauge from './NutritionGauge.jsx'
 
+function SourceLinks({ sources }) {
+  if (!sources || sources.length === 0) return null
+  return (
+    <div className="mt-1.5 flex flex-col gap-1">
+      <p className="text-xs font-semibold text-slate-500">Evidence</p>
+      {sources.map((s, i) => (
+        <a
+          key={i}
+          href={s.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2 leading-relaxed"
+        >
+          🔗 {s.label}
+        </a>
+      ))}
+    </div>
+  )
+}
+
 export default function FoodResult({ product, onBack }) {
   const analysis = analyseFoodProduct(product)
   const imageUrl = product.image_front_url || product.image_url
@@ -14,9 +34,7 @@ export default function FoodResult({ product, onBack }) {
 
       <div className="card p-4 flex gap-4 items-start">
         {imageUrl && (
-          <img
-            src={imageUrl}
-            alt={product.product_name}
+          <img src={imageUrl} alt={product.product_name}
             className="w-20 h-20 object-contain rounded-xl bg-slate-800 flex-shrink-0"
             onError={e => e.target.style.display = 'none'}
           />
@@ -45,18 +63,20 @@ export default function FoodResult({ product, onBack }) {
       {analysis.allergens.length > 0 && (
         <div className="card p-4 border border-orange-500/30 bg-orange-500/10">
           <p className="text-sm font-semibold text-orange-400 mb-2">⚠️ Contains allergens</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mb-2">
             {analysis.allergens.map((a, i) => (
               <span key={i} className="text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">{a.label}</span>
             ))}
           </div>
+          <p className="text-xs text-slate-400">Allergens are declared as required by EU Food Information Regulation 1169/2011.</p>
+          <SourceLinks sources={[{ label: 'EU Regulation 1169/2011 — Food allergen labelling', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32011R1169' }]} />
         </div>
       )}
 
       {analysis.flags.length > 0 && (
         <div className="card p-4">
           <p className="text-sm font-semibold text-white mb-2">📊 Nutritional flags</p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {analysis.flags.map((flag, i) => (
               <div key={i} className={`rounded-xl p-3 border ${
                 flag.level === 'high'     ? 'bg-red-500/10 border-red-500/30' :
@@ -65,6 +85,7 @@ export default function FoodResult({ product, onBack }) {
               }`}>
                 <p className="text-sm font-semibold text-white">{flag.label}</p>
                 <p className="text-xs text-slate-400 mt-1">{flag.detail}</p>
+                <SourceLinks sources={flag.sources} />
               </div>
             ))}
           </div>
@@ -73,12 +94,13 @@ export default function FoodResult({ product, onBack }) {
 
       {analysis.additiveFlags.length > 0 && (
         <div className="card p-4">
-          <p className="text-sm font-semibold text-white mb-2">🚩 Ingredients some people avoid</p>
-          <div className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-white mb-2">🚩 Notable ingredients</p>
+          <div className="flex flex-col gap-3">
             {analysis.additiveFlags.map((item, i) => (
               <div key={i} className="rounded-xl p-3 border border-slate-700 bg-slate-800/70">
                 <p className="text-sm font-semibold text-white">{item.label}</p>
                 <p className="text-xs text-slate-400 mt-1">{item.detail}</p>
+                <SourceLinks sources={item.sources} />
               </div>
             ))}
           </div>
