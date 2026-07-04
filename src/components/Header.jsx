@@ -9,7 +9,7 @@ export default function Header() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-white leading-none">IngrediClear</h1>
-          <p className="text-xs text-slate-400 leading-none mt-0.5">Know what's in your cosmetics</p>
+          <p className="text-xs text-slate-400 leading-none mt-0.5">Know what’s in your cosmetics & food</p>
         </div>
       </div>
     </header>
