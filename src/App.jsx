@@ -1,13 +1,20 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import Header from './components/Header.jsx'
 import Scanner from './components/Scanner.jsx'
 import ManualEntry from './components/ManualEntry.jsx'
 import ProductResult from './components/ProductResult.jsx'
+import FoodResult from './components/FoodResult.jsx'
 import LoadingSpinner from './components/LoadingSpinner.jsx'
 import ErrorCard from './components/ErrorCard.jsx'
 import ScanHistory from './components/ScanHistory.jsx'
 import { fetchProduct } from './api/openBeautyFacts.js'
+import { fetchFoodProduct } from './api/openFoodFacts.js'
 import { saveToHistory, getHistory } from './data/history.js'
+
+const PRODUCT_TYPES = [
+  { id: 'cosmetics', label: '🧴 Cosmetics' },
+  { id: 'food', label: '🍽️ Food' }
+]
 
 const TABS = [
   { id: 'scan', label: '📷 Scan' },
@@ -16,6 +23,7 @@ const TABS = [
 ]
 
 export default function App() {
+  const [productType, setProductType] = useState('cosmetics')
   const [activeTab, setActiveTab] = useState('scan')
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -27,10 +35,20 @@ export default function App() {
     setLoading(true)
     setError(null)
     setProduct(null)
+
     try {
-      const data = await fetchProduct(barcode)
-      setProduct(data)
-      const updated = saveToHistory({ barcode, name: data.product_name, brand: data.brands, image: data.image_front_url || data.image_url })
+      const data = productType === 'food'
+        ? await fetchFoodProduct(barcode)
+        : await fetchProduct(barcode)
+
+      setProduct({ ...data, _type: productType })
+      const updated = saveToHistory({
+        barcode,
+        name: data.product_name,
+        brand: data.brands,
+        image: data.image_front_url || data.image_url,
+        type: productType
+      })
       setHistory(updated)
     } catch (err) {
       setError(err.message)
@@ -51,13 +69,29 @@ export default function App() {
       {!product && !loading && (
         <>
           <div className="flex gap-1 mx-4 mt-4 p-1 bg-slate-900 rounded-xl border border-slate-800">
+            {PRODUCT_TYPES.map(type => (
+              <button
+                key={type.id}
+                onClick={() => { setProductType(type.id); setError(null) }}
+                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
+                  productType === type.id
+                    ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {type.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-1 mx-4 mt-3 p-1 bg-slate-900 rounded-xl border border-slate-800">
             {TABS.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
+                    ? 'bg-slate-700 text-white'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -66,10 +100,10 @@ export default function App() {
             ))}
           </div>
 
-          <div className="flex-1 px-4 py-4">
+          <div className="px-4 py-4">
             {activeTab === 'scan' && <Scanner onDetected={handleBarcode} />}
-            {activeTab === 'manual' && <ManualEntry onSubmit={handleBarcode} />}
-            {activeTab === 'history' && <ScanHistory history={history} onSelect={handleBarcode} />}
+            {activeTab === 'manual' && <ManualEntry onSubmit={handleBarcode} productType={productType} />}
+            {activeTab === 'history' && <ScanHistory history={history.filter(h => h.type === productType)} onSelect={handleBarcode} />}
           </div>
         </>
       )}
@@ -88,7 +122,9 @@ export default function App() {
 
       {product && !loading && (
         <div className="flex-1 px-4 py-4 animate-slide-up">
-          <ProductResult product={product} onBack={handleReset} />
+          {product._type === 'food'
+            ? <FoodResult product={product} onBack={handleReset} />
+            : <ProductResult product={product} onBack={handleReset} />}
         </div>
       )}
 

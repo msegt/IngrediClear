@@ -2,19 +2,17 @@ import React, { useState } from 'react'
 import { searchProductsByName } from '../api/openBeautyFacts.js'
 
 const DEMO_PRODUCTS = [
-  { name: 'Dove Intensive Cream',   code: '8712561614133' },
+  { name: 'Dove Intensive Cream', code: '8712561614133' },
   { name: 'Nivea Soft Moisturising', code: '4005808224067' },
   { name: "L'Oréal Elvive Shampoo", code: '3600522851264' }
 ]
 
-export default function ManualEntry({ onSubmit }) {
-  const [mode, setMode]           = useState('barcode') // 'barcode' | 'name'
+export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
+  const [mode, setMode]           = useState('barcode')
   const [value, setValue]         = useState('')
   const [results, setResults]     = useState([])
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState('')
-
-  const isBarcode = (v) => /^[0-9]{6,}$/.test(v.trim())
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -38,15 +36,15 @@ export default function ManualEntry({ onSubmit }) {
     }
   }
 
-  const handleSelectResult = (product) => {
-    // Use barcode (code) if available, otherwise fall back to id
-    onSubmit(product.code || product.id)
-  }
+  const handleSelectResult = (product) => onSubmit(product.code || product.id)
+
+  const namePlaceholder = productType === 'food' ? 'e.g. Nutella, Greek yogurt, oat milk' : 'e.g. Nivea Sun Cream SPF50'
+  const nameHint = productType === 'food'
+    ? 'Search by food name, brand, or type.'
+    : 'Search by product name, brand, or type (e.g. “nivea sun cream”).'
 
   return (
     <div className="flex flex-col gap-4">
-
-      {/* Mode toggle */}
       <div className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800">
         {[{ id: 'barcode', label: '📶 Barcode number' }, { id: 'name', label: '🔍 Product name' }].map(m => (
           <button
@@ -63,7 +61,6 @@ export default function ManualEntry({ onSubmit }) {
         ))}
       </div>
 
-      {/* Input card */}
       <div className="card p-5">
         {mode === 'barcode' ? (
           <>
@@ -74,55 +71,43 @@ export default function ManualEntry({ onSubmit }) {
                 inputMode="numeric"
                 value={value}
                 onChange={e => setValue(e.target.value)}
-                placeholder="e.g. 3600523462452"
+                placeholder="e.g. 3017620422003"
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition text-lg tracking-widest"
               />
-              <button
-                type="submit"
-                disabled={value.trim().length < 6}
-                className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Check Ingredients →
+              <button type="submit" disabled={value.trim().length < 6} className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
+                Check →
               </button>
             </form>
           </>
         ) : (
           <>
-            <p className="text-sm text-slate-400 mb-3">Search by product name, brand, or type (e.g. “nivea sun cream”).</p>
+            <p className="text-sm text-slate-400 mb-3">{nameHint}</p>
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               <input
                 type="search"
                 value={value}
                 onChange={e => { setValue(e.target.value); setResults([]); setSearchError('') }}
-                placeholder="e.g. Nivea Sun Cream SPF50"
+                placeholder={namePlaceholder}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
                 autoComplete="off"
               />
-              <button
-                type="submit"
-                disabled={value.trim().length < 2 || searching}
-                className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {searching
-                  ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Searching…</>
-                  : 'Search →'}
+              <button type="submit" disabled={value.trim().length < 2 || searching} className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {searching ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Searching…</> : 'Search →'}
               </button>
             </form>
           </>
         )}
       </div>
 
-      {/* Search error */}
       {searchError && (
         <div className="card p-4 border border-red-500/30 bg-red-500/10">
           <p className="text-sm text-red-400">{searchError}</p>
         </div>
       )}
 
-      {/* Search results */}
       {results.length > 0 && (
         <div className="card">
-          <p className="text-xs font-semibold text-slate-400 px-4 pt-4 pb-2">{results.length} result{results.length !== 1 ? 's' : ''} found — tap to check ingredients</p>
+          <p className="text-xs font-semibold text-slate-400 px-4 pt-4 pb-2">{results.length} results found — tap to continue</p>
           <div className="flex flex-col pb-2">
             {results.map((product, i) => (
               <button
@@ -146,8 +131,7 @@ export default function ManualEntry({ onSubmit }) {
         </div>
       )}
 
-      {/* Demo products — only show in barcode mode when no results */}
-      {mode === 'barcode' && results.length === 0 && (
+      {productType === 'cosmetics' && mode === 'barcode' && results.length === 0 && (
         <div className="card p-5">
           <h3 className="text-sm font-semibold text-slate-300 mb-3">🧪 Try a demo product</h3>
           <div className="flex flex-col gap-2">
