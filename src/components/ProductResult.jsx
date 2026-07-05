@@ -1,16 +1,21 @@
 import React, { useMemo, useState } from 'react'
 import { analyseIngredients } from '../data/ingredientChecker.js'
 import { detectCategory, getCategoryWarnings } from '../data/categoryDetector.js'
-import IngredientRow from './IngredientRow.jsx'
-import ImageLightbox from './ImageLightbox.jsx'
+import IngredientRow     from './IngredientRow.jsx'
+import ImageLightbox     from './ImageLightbox.jsx'
+import IngredientCapture from './IngredientCapture.jsx'
 
 export default function ProductResult({ product, onBack }) {
-  const [showAll, setShowAll]         = useState(false)
+  const [showAll, setShowAll]           = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  // When user adds ingredients inline for a product that had none, we overlay them here
+  const [manualIngredients, setManualIngredients] = useState(null)
 
-  const hasIngredients = !!(product.ingredients_text && product.ingredients_text.trim().length > 0)
-  const analysed = useMemo(() => analyseIngredients(product.ingredients_text || ''), [product])
-  const category = useMemo(() => detectCategory(product), [product])
+  const ingredientsText = manualIngredients ?? (product.ingredients_text || '')
+  const hasIngredients  = ingredientsText.trim().length > 0
+
+  const analysed         = useMemo(() => analyseIngredients(ingredientsText), [ingredientsText])
+  const category         = useMemo(() => detectCategory(product), [product])
   const categoryWarnings = useMemo(() => getCategoryWarnings(category), [category])
 
   const { harmful, allergens, caution, safe, unknown } = useMemo(() => {
@@ -35,12 +40,10 @@ export default function ProductResult({ product, onBack }) {
 
   const scoreReason = useMemo(() => {
     if (!hasIngredients) return 'No ingredient list available — safety cannot be assessed.'
-    if (overallScore === 'harmful') {
+    if (overallScore === 'harmful')
       return `${harmful.length} ingredient${harmful.length > 1 ? 's' : ''} matched a known or suspected hazard. See details below.`
-    }
-    if (overallScore === 'caution') {
+    if (overallScore === 'caution')
       return `${caution.length} ingredient${caution.length > 1 ? 's' : ''} with a use-with-caution flag. See details below.`
-    }
     const allergenNote = allergens.length > 0
       ? ` Contains ${allergens.length} EU-listed fragrance allergen${allergens.length > 1 ? 's' : ''} — safe for most people, but avoid if you have a sensitivity to ${allergens.length > 1 ? 'these ingredients' : 'this ingredient'}.`
       : ''
@@ -51,12 +54,12 @@ export default function ProductResult({ product, onBack }) {
   }, [overallScore, hasIngredients, harmful, caution, allergens, unknown])
 
   const scoreConfig = {
-    safe:    { emoji: '✅', label: 'Generally Safe',                color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
-    caution: { emoji: '⚠️', label: 'Use with Caution',             color: 'text-yellow-400',  bg: 'bg-yellow-500/10 border-yellow-500/30'  },
-    harmful: { emoji: '🚫', label: 'Harmful Ingredients Detected',  color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/30'         },
-    unknown: { emoji: '❓', label: 'Ingredients Not Available',     color: 'text-slate-400',  bg: 'bg-slate-700/40 border-slate-600/40'     }
+    safe:    { emoji: '✅', label: 'Generally Safe',               color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+    caution: { emoji: '⚠️', label: 'Use with Caution',            color: 'text-yellow-400',  bg: 'bg-yellow-500/10  border-yellow-500/30'  },
+    harmful: { emoji: '🚫', label: 'Harmful Ingredients Detected', color: 'text-red-400',     bg: 'bg-red-500/10     border-red-500/30'      },
+    unknown: { emoji: '❓', label: 'Ingredients Not Available',    color: 'text-slate-400',  bg: 'bg-slate-700/40   border-slate-600/40'    }
   }
-  const score = scoreConfig[overallScore]
+  const score    = scoreConfig[overallScore]
   const imageUrl = product.image_url || product.image_front_url
 
   const handleShare = async () => {
@@ -130,86 +133,118 @@ export default function ProductResult({ product, onBack }) {
         </div>
       )}
 
-      {/* Overall score */}
-      <div className={`card p-4 border ${score.bg} flex items-center gap-4`}>
-        <span className="text-4xl" aria-hidden="true">{score.emoji}</span>
-        <div className="flex-1 min-w-0">
-          <p className={`font-bold text-lg ${score.color}`}>{score.label}</p>
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed">{scoreReason}</p>
-        </div>
-      </div>
-
-      {/* Stat pills */}
-      {hasIngredients && (
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { label: 'Harmful',   count: harmful.length,  color: 'text-red-400    bg-red-500/10    border-red-500/20'       },
-            { label: 'Allergens', count: allergens.length, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20'    },
-            { label: 'Caution',   count: caution.length,  color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20'    },
-            { label: 'Safe',      count: safe.length,     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
-          ].map(s => (
-            <div key={s.label} className={`border rounded-xl p-2.5 text-center ${s.color}`}>
-              <div className="text-xl font-bold">{s.count}</div>
-              <div className="text-xs mt-0.5 opacity-80">{s.label}</div>
+      {/* No-ingredients capture prompt — shown instead of score card until user adds ingredients */}
+      {!hasIngredients && (
+        <div className="flex flex-col gap-4">
+          <div className="card p-4 border border-amber-500/30 bg-amber-500/10 flex gap-3 items-start">
+            <span className="text-2xl mt-0.5" aria-hidden="true">📋</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-amber-400 text-sm">No ingredient list in the database</p>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                This product was found but has no ingredient data yet. Paste the list from the packaging
+                or take a photo — the analysis runs entirely on your device.
+              </p>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
 
-      {/* Unknown ingredients disclaimer */}
-      {hasIngredients && unknown.length > 0 && (
-        <div className="card p-3 border border-slate-600/40 bg-slate-700/20 flex gap-3 items-start">
-          <span className="text-lg mt-0.5" aria-hidden="true">❓</span>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            <span className="font-semibold text-slate-300">{unknown.length} ingredient{unknown.length > 1 ? 's' : ''} not in our database</span> and could not be assessed. This does not mean they are safe — it means we have no data on them.
-          </p>
-        </div>
-      )}
+          <IngredientCapture onAnalyse={(text) => setManualIngredients(text)} />
 
-      {hasIngredients && harmful.length > 0  && <IngredientSection title="🚫 Harmful Ingredients" items={harmful} />}
-      {hasIngredients && caution.length > 0   && <IngredientSection title="⚠️ Use with Caution" items={caution} />}
-      {hasIngredients && allergens.length > 0  && (
-        <IngredientSection
-          title="🤧 Fragrance Allergens Detected"
-          items={allergens}
-          note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them. If you have an allergy or sensitivity to any of these, do not use this product."
-        />
-      )}
-
-      {hasIngredients && (safe.length > 0 || unknown.length > 0) && (
-        <div className="card">
-          <button
-            onClick={() => setShowAll(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-400 hover:text-white transition"
-            aria-expanded={showAll}
-          >
-            <span>✅ Safe & unclassified ({safe.length + unknown.length})</span>
-            <span className="text-xs" aria-hidden="true">{showAll ? '▲ Hide' : '▼ Show'}</span>
-          </button>
-          {showAll && (
-            <div className="px-4 pb-3">
-              {[...safe, ...unknown].map((item, i) => <IngredientRow key={i} item={item} />)}
-            </div>
+          {/* Still let them contribute to the community database */}
+          {product.id && product._source !== 'upcitemdb' && product._source !== 'manual' && (
+            <a
+              href={`https://world.openbeautyfacts.org/product/${product.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-center text-xs text-slate-500 hover:text-brand-400 transition underline underline-offset-2"
+            >
+              Also add these ingredients to Open Beauty Facts to help others →
+            </a>
           )}
         </div>
       )}
 
-      {!hasIngredients && (
-        <div className="card p-6 flex flex-col items-center text-center gap-3">
-          <span className="text-4xl" aria-hidden="true">📋</span>
-          <p className="font-semibold text-white">No ingredient list available</p>
-          <p className="text-sm text-slate-400">
-            This product is in the Open Beauty Facts database but has no ingredient data yet.
-            Safety cannot be assessed — help the community by adding the ingredients!
-          </p>
-          <a
-            href={`https://world.openbeautyfacts.org/product/${product.id}`}
-            target="_blank" rel="noopener noreferrer"
-            className="btn-primary text-sm w-full text-center"
-          >
-            Add ingredients on Open Beauty Facts →
-          </a>
-        </div>
+      {/* Everything below only renders once we have ingredients */}
+      {hasIngredients && (
+        <>
+          {/* Banner if ingredients were added manually */}
+          {manualIngredients && (
+            <div className="card p-3 border border-brand-500/30 bg-brand-500/10 flex items-center gap-3">
+              <span aria-hidden="true">ℹ️</span>
+              <p className="text-xs text-brand-300 leading-relaxed flex-1">
+                Analysis based on ingredients you entered — not from the product database.
+              </p>
+              <button
+                onClick={() => setManualIngredients(null)}
+                className="text-xs text-slate-400 hover:text-white transition flex-shrink-0"
+                aria-label="Clear manual ingredients"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
+          {/* Overall score */}
+          <div className={`card p-4 border ${score.bg} flex items-center gap-4`}>
+            <span className="text-4xl" aria-hidden="true">{score.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className={`font-bold text-lg ${score.color}`}>{score.label}</p>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">{scoreReason}</p>
+            </div>
+          </div>
+
+          {/* Stat pills */}
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: 'Harmful',   count: harmful.length,  color: 'text-red-400     bg-red-500/10    border-red-500/20'      },
+              { label: 'Allergens', count: allergens.length, color: 'text-orange-400  bg-orange-500/10 border-orange-500/20'   },
+              { label: 'Caution',   count: caution.length,  color: 'text-yellow-400  bg-yellow-500/10 border-yellow-500/20'   },
+              { label: 'Safe',      count: safe.length,     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
+            ].map(s => (
+              <div key={s.label} className={`border rounded-xl p-2.5 text-center ${s.color}`}>
+                <div className="text-xl font-bold">{s.count}</div>
+                <div className="text-xs mt-0.5 opacity-80">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Unknown ingredients disclaimer */}
+          {unknown.length > 0 && (
+            <div className="card p-3 border border-slate-600/40 bg-slate-700/20 flex gap-3 items-start">
+              <span className="text-lg mt-0.5" aria-hidden="true">❓</span>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                <span className="font-semibold text-slate-300">{unknown.length} ingredient{unknown.length > 1 ? 's' : ''} not in our database</span> and could not be assessed. This does not mean they are safe — it means we have no data on them.
+              </p>
+            </div>
+          )}
+
+          {harmful.length > 0   && <IngredientSection title="🚫 Harmful Ingredients" items={harmful} />}
+          {caution.length > 0   && <IngredientSection title="⚠️ Use with Caution" items={caution} />}
+          {allergens.length > 0 && (
+            <IngredientSection
+              title="🤧 Fragrance Allergens Detected"
+              items={allergens}
+              note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them. If you have an allergy or sensitivity to any of these, do not use this product."
+            />
+          )}
+
+          {(safe.length > 0 || unknown.length > 0) && (
+            <div className="card">
+              <button
+                onClick={() => setShowAll(v => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-400 hover:text-white transition"
+                aria-expanded={showAll}
+              >
+                <span>✅ Safe &amp; unclassified ({safe.length + unknown.length})</span>
+                <span className="text-xs" aria-hidden="true">{showAll ? '▲ Hide' : '▼ Show'}</span>
+              </button>
+              {showAll && (
+                <div className="px-4 pb-3">
+                  {[...safe, ...unknown].map((item, i) => <IngredientRow key={i} item={item} />)}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       <p className="text-center text-xs text-slate-600 px-4">
