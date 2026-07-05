@@ -6,7 +6,7 @@
 // - EWG Skin Deep (indicative hazard scores): https://www.ewg.org/skindeep/
 
 import { getIngredientDescription } from './ingredientDescriptions.js'
-import { getCosIngData, FUNCTION_LABELS } from './cosingData.js'
+import { getCosIngData } from './cosingData.js'
 
 const HARMFUL_INGREDIENTS = [
   {
@@ -305,12 +305,9 @@ export function analyseIngredients(text) {
       }
     }
 
-    // Safe or unknown — enrich with CosIng data
     const description = getIngredientDescription(raw)
     const cosing = getCosIngData(norm)
 
-    // If CosIng marks this as restricted/prohibited and we haven't flagged it already,
-    // show it as caution with the restriction note
     if (cosing && (cosing.eu === 'restricted' || cosing.eu === 'prohibited') && cosing.restriction) {
       return {
         name: raw,
@@ -333,10 +330,10 @@ export function analyseIngredients(text) {
       rating: 'safe',
       isAllergen: false,
       concern: null,
-      description,          // brief plain-language role, shown as subtitle
+      description,
       hazardScore: null,
       alternatives: null,
-      cosing,               // CosIng function labels and EU status (may be null)
+      cosing,
       sources: []
     }
   })
