@@ -109,7 +109,7 @@ const ADDITIVE_CHECKS = [
     detail: 'Banned as a food additive in the EU since 2022 following an EFSA safety re-evaluation that could not exclude genotoxicity of nano-particles. Still permitted in some other jurisdictions.',
     sources: [
       { label: 'EFSA — Re-evaluation of titanium dioxide (E171) as food additive (2021)', url: 'https://efsa.onlinelibrary.wiley.com/doi/10.2903/j.efsa.2021.6585' },
-      { label: 'EU Commission — Regulation banning E171 in food (2022)', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R0063' }
+      { label: 'EU Commission — Regulation banning E171 in food (2022)', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R2063' }
     ]
   },
   {
@@ -151,6 +151,12 @@ export function analyseFoodProduct(product) {
   const fiber        = round(nutriments.fiber_100g)
   const energyKcal   = round(nutriments['energy-kcal_100g'])
 
+  // Track which nutrients we actually have data for
+  const availableNutrients = [salt, sugar, protein, saturatedFat, fiber].filter(v => v !== null)
+  const dataQuality = availableNutrients.length === 0 ? 'none'
+    : availableNutrients.length <= 2 ? 'partial'
+    : 'full'
+
   const allergens = (product.allergens_tags || [])
     .map(tag => COMMON_ALLERGENS.find(a => a.tag === tag))
     .filter(Boolean)
@@ -184,46 +190,103 @@ export function analyseFoodProduct(product) {
 
   const nutriscore = (product.nutriscore_grade || '').toUpperCase()
   const scoreReasons = []
-  let healthScore = 55
+  let healthScore = null
 
   if (nutriscore && { A: 1, B: 1, C: 1, D: 1, E: 1 }[nutriscore]) {
     healthScore = { A: 92, B: 75, C: 55, D: 35, E: 15 }[nutriscore]
     scoreReasons.push({
       impact: 'neutral',
       text: `Nutri-Score ${nutriscore} — a science-based front-of-pack rating developed by Santé publique France, widely adopted across the EU. This is the primary basis for the score.`,
-      sources: [{ label: 'Santé publique France — Nutri-Score methodology', url: 'https://www.santepubliquefrance.fr/determinants-de-sante/nutrition-et-activite-physique/articles/nutri-score' }]
+      delta: null,
+    })
+  } else if (dataQuality === 'none') {
+    // No nutrient data at all — do not fabricate a score
+    healthScore = null
+    scoreReasons.push({
+      impact: 'neutral',
+      text: 'No nutritional data found in Open Food Facts for this product. A health score cannot be calculated without at least some nutrient values.',
+      delta: null,
     })
   } else {
-    scoreReasons.push({ impact: 'neutral', text: 'No Nutri-Score available — score estimated from individual nutrient levels using UK FSA traffic-light thresholds.', sources: NUTRIENT_SOURCES })
+    // Estimate from available nutrients
+    healthScore = 55
+    const missingNutrients = []
+    if (salt === null)         missingNutrients.push('salt')
+    if (sugar === null)        missingNutrients.push('sugar')
+    if (saturatedFat === null) missingNutrients.push('saturated fat')
+    if (protein === null)      missingNutrients.push('protein')
+    if (fiber === null)        missingNutrients.push('fibre')
+
+    scoreReasons.push({
+      impact: 'neutral',
+      text: `No Nutri-Score available — score estimated from ${availableNutrients.length} of 5 tracked nutrients using UK FSA traffic-light thresholds. Starting point: 55/100.`,
+      delta: null,
+    })
+
+    if (missingNutrients.length > 0) {
+      scoreReasons.push({
+        impact: 'neutral',
+        text: `Missing data for: ${missingNutrients.join(', ')}. These could not be factored into the score.`,
+        delta: null,
+      })
+    }
 
     if (flags.some(f => f.level === 'high' && f.label.includes('sugar'))) {
       healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High sugar (${sugar}g/100g, above UK FSA threshold of 22.5g) lowers the score.`, sources: NUTRIENT_SOURCES })
+      scoreReasons.push({ impact: 'negative', text: `High sugar (${sugar}g/100g) — above UK FSA “high” threshold of 22.5g/100g.`, delta: -20 })
     } else if (flags.some(f => f.level === 'moderate' && f.label.includes('sugar'))) {
-      scoreReasons.push({ impact: 'neutral', text: `Moderate sugar (${sugar}g/100g) — within the UK FSA medium band.`, sources: NUTRIENT_SOURCES })
+      healthScore -= 5
+      scoreReasons.push({ impact: 'negative', text: `Moderate sugar (${sugar}g/100g) — UK FSA medium band (5–22.5g/100g).`, delta: -5 })
+    } else if (sugar !== null) {
+      scoreReasons.push({ impact: 'positive', text: `Low sugar (${sugar}g/100g) — below UK FSA “low” threshold of 5g/100g.`, delta: null })
     }
+
     if (flags.some(f => f.level === 'high' && f.label.includes('salt'))) {
       healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High salt (${salt}g/100g, above UK FSA threshold of 1.5g) lowers the score.`, sources: NUTRIENT_SOURCES })
+      scoreReasons.push({ impact: 'negative', text: `High salt (${salt}g/100g) — above UK FSA “high” threshold of 1.5g/100g.`, delta: -20 })
     } else if (flags.some(f => f.level === 'moderate' && f.label.includes('salt'))) {
-      scoreReasons.push({ impact: 'neutral', text: `Moderate salt (${salt}g/100g) — within the UK FSA medium band.`, sources: NUTRIENT_SOURCES })
+      healthScore -= 5
+      scoreReasons.push({ impact: 'negative', text: `Moderate salt (${salt}g/100g) — UK FSA medium band (0.3–1.5g/100g).`, delta: -5 })
+    } else if (salt !== null) {
+      scoreReasons.push({ impact: 'positive', text: `Low salt (${salt}g/100g) — below UK FSA “low” threshold of 0.3g/100g.`, delta: null })
     }
+
     if (flags.some(f => f.level === 'high' && f.label.includes('saturated'))) {
       healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High saturated fat (${saturatedFat}g/100g, above UK FSA threshold of 5g) lowers the score.`, sources: NUTRIENT_SOURCES })
+      scoreReasons.push({ impact: 'negative', text: `High saturated fat (${saturatedFat}g/100g) — above UK FSA “high” threshold of 5g/100g.`, delta: -20 })
     } else if (flags.some(f => f.level === 'moderate' && f.label.includes('saturated'))) {
-      scoreReasons.push({ impact: 'neutral', text: `Moderate saturated fat (${saturatedFat}g/100g) — within the UK FSA medium band.`, sources: NUTRIENT_SOURCES })
+      healthScore -= 5
+      scoreReasons.push({ impact: 'negative', text: `Moderate saturated fat (${saturatedFat}g/100g) — UK FSA medium band (1.5–5g/100g).`, delta: -5 })
+    } else if (saturatedFat !== null) {
+      scoreReasons.push({ impact: 'positive', text: `Low saturated fat (${saturatedFat}g/100g) — below UK FSA “low” threshold of 1.5g/100g.`, delta: null })
     }
+
     if (flags.some(f => f.level === 'good' && f.label.includes('protein'))) {
       healthScore += 10
-      scoreReasons.push({ impact: 'positive', text: `Good protein content (${protein}g/100g) boosts the score.`, sources: NUTRIENT_SOURCES })
+      scoreReasons.push({ impact: 'positive', text: `High protein (${protein}g/100g) — above “good source” threshold of 10g/100g (EU Reg. 1924/2006).`, delta: +10 })
+    } else if (protein !== null) {
+      scoreReasons.push({ impact: 'neutral', text: `Protein: ${protein}g/100g — below “good source” threshold (10g/100g). No adjustment.`, delta: null })
     }
+
     if (flags.some(f => f.level === 'good' && f.label.includes('fibre'))) {
       healthScore += 10
-      scoreReasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g, meets EU “source of fibre” criterion) boosts the score.`, sources: NUTRIENT_SOURCES })
+      scoreReasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g) — meets EU “source of fibre” criterion (≥3g/100g).`, delta: +10 })
+    } else if (fiber !== null) {
+      scoreReasons.push({ impact: 'neutral', text: `Fibre: ${fiber}g/100g — below EU “source of fibre” threshold (3g/100g). No adjustment.`, delta: null })
     }
+
     healthScore = Math.max(5, Math.min(95, healthScore))
   }
 
-  return { allergens, flags, additiveFlags, nutrients: { salt, sugar, protein, saturatedFat, fiber, energyKcal }, healthScore, scoreReasons, nutriscore, novaGroup: product.nova_group || null }
+  return {
+    allergens,
+    flags,
+    additiveFlags,
+    nutrients: { salt, sugar, protein, saturatedFat, fiber, energyKcal },
+    healthScore,
+    scoreReasons,
+    nutriscore,
+    novaGroup: product.nova_group || null,
+    dataQuality,
+  }
 }
