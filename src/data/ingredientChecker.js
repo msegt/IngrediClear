@@ -12,7 +12,7 @@ const HARMFUL_INGREDIENTS = [
     hazardScore: 10,
     alternatives: 'Look for products preserved with sodium benzoate, potassium sorbate, or vitamin E (tocopherol).',
     sources: [
-      { label: 'IARC Monograph Vol. 100F — Formaldehyde', url: 'https://monographs.iarc.who.int/iarc-monographs-on-the-evaluation-of-carcinogenic-risks-to-humans-100f/' },
+      { label: 'IARC Monograph Vol. 100F — Formaldehyde', url: 'https://monographs.iarc.who.int/list-of-classifications/' },
       { label: 'EU Cosmetics Regulation 1223/2009 — Annex II (prohibited substances)', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' }
     ]
   },
@@ -33,17 +33,17 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Cocamidopropyl betaine, sodium cocoyl isethionate, or decyl glucoside — gentler plant-derived surfactants.',
     sources: [
       { label: 'IARC Monograph — 1,4-Dioxane (Group 2A)', url: 'https://monographs.iarc.who.int/list-of-classifications/' },
-      { label: 'FDA — 1,4-Dioxane in cosmetics', url: 'https://www.fda.gov/cosmetics/potential-contaminants-cosmetics/14-dioxane-cosmetics' }
+      { label: 'FDA — 1,4-Dioxane in cosmetics', url: 'https://www.fda.gov/cosmetics/potential-contaminants-cosmetics/14-dioxane-cosmetics-0' }
     ]
   },
   {
     names: ['phthalates', 'dibutyl phthalate', 'diethylhexyl phthalate', 'dimethyl phthalate'],
-    concern: 'Reproductive and developmental toxins in animal studies. Dibutyl phthalate and DEHP are banned in EU cosmetics. Often present in products listing only "fragrance" without full disclosure.',
+    concern: 'Reproductive and developmental toxins in animal studies. Dibutyl phthalate and DEHP are banned in EU cosmetics. Often present in products listing only “fragrance” without full disclosure.',
     hazardScore: 8,
-    alternatives: 'Choose phthalate-free nail polishes; look for "fragrance-free" or products that disclose all fragrance ingredients.',
+    alternatives: 'Choose phthalate-free nail polishes; look for “fragrance-free” or products that disclose all fragrance ingredients.',
     sources: [
       { label: 'EU Cosmetics Regulation 1223/2009 — Annex II (DBP, DEHP prohibited)', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' },
-      { label: 'ECHA — Phthalates as substances of very high concern', url: 'https://echa.europa.eu/substances-of-very-high-concern-identification/-/dislist/details/0b0236e180d451e1' }
+      { label: 'ECHA — Phthalates as substances of very high concern', url: 'https://echa.europa.eu/candidate-list-table/-/dislist/details/0b0236e180d451e1' }
     ]
   },
   {
@@ -52,7 +52,7 @@ const HARMFUL_INGREDIENTS = [
     hazardScore: 8,
     alternatives: 'Plain soap and water is equally effective for hand hygiene. Ethanol-based sanitisers where needed.',
     sources: [
-      { label: 'FDA — Triclosan: OTC antiseptic ban (2016)', url: 'https://www.fda.gov/consumers/consumer-updates/triclosan-what-consumers-should-know' },
+      { label: 'FDA — Triclosan: OTC antiseptic ban (2016)', url: 'https://www.fda.gov/consumers/consumer-updates/triclosan-what-consumers-should-know-0' },
       { label: 'EU SCCS — Opinion on triclosan', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_054.pdf' }
     ]
   },
@@ -93,7 +93,7 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Henna-based hair dyes or modern ammonia-free synthetic dyes without metallic salts.',
     sources: [
       { label: 'WHO — Lead poisoning and health', url: 'https://www.who.int/news-room/fact-sheets/detail/lead-poisoning-and-health' },
-      { label: 'FDA — Lead acetate in hair dyes (banned 2018)', url: 'https://www.fda.gov/cosmetics/cosmetic-ingredients/lead-acetate-hair-dyes' }
+      { label: 'FDA — Lead acetate in hair dyes (banned 2018)', url: 'https://www.fda.gov/cosmetics/cosmetic-ingredients/lead-acetate' }
     ]
   },
   {
@@ -103,7 +103,7 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Regulated, mercury-free products; niacinamide or vitamin C for brightening.',
     sources: [
       { label: 'WHO — Mercury in skin-lightening products', url: 'https://www.who.int/news-room/fact-sheets/detail/mercury-and-health' },
-      { label: 'FDA — Mercury in cosmetics', url: 'https://www.fda.gov/cosmetics/cosmetic-ingredients/mercury-cosmetics' }
+      { label: 'FDA — Mercury in cosmetics', url: 'https://www.fda.gov/cosmetics/cosmetic-ingredients/mercury-cosmetics-0' }
     ]
   },
   {
@@ -113,7 +113,7 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Shea butter, coconut oil, jojoba oil, or squalane as natural occlusives if you prefer to avoid petroleum derivatives.',
     sources: [
       { label: 'EU CosIng — Petrolatum entry', url: 'https://ec.europa.eu/growth/tools-databases/cosing/details/63176' },
-      { label: 'FDA — Petrolatum as OTC skin protectant (safe)', url: 'https://www.fda.gov/drugs/active-ingredient/petrolatum' }
+      { label: 'FDA — Petrolatum as OTC skin protectant (safe)', url: 'https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=019683' }
     ]
   },
   {
@@ -132,7 +132,7 @@ const HARMFUL_INGREDIENTS = [
     hazardScore: 8,
     alternatives: 'Products preserved with phenoxyethanol + ethylhexylglycerin, or naturally preserved formulas.',
     sources: [
-      { label: 'IARC Monograph — Formaldehyde (Group 1)', url: 'https://monographs.iarc.who.int/iarc-monographs-on-the-evaluation-of-carcinogenic-risks-to-humans-100f/' },
+      { label: 'IARC Monograph — Formaldehyde (Group 1)', url: 'https://monographs.iarc.who.int/list-of-classifications/' },
       { label: 'SCCS — Opinion on DMDM Hydantoin', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_084.pdf' }
     ]
   },
@@ -251,7 +251,7 @@ const CAUTION_INGREDIENTS = [
     alternatives: 'Fragrance-free formulations, or products scented only with fully disclosed, low-allergen aromatic compounds.',
     sources: [
       { label: 'SCCS — Opinion on fragrance allergens in cosmetic products', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_102.pdf' },
-      { label: 'Contact Dermatitis — Essential oils as allergens (Bauer et al.)', url: 'https://doi.org/10.1111/cod.12333' }
+      { label: 'Contact Dermatitis — Essential oils as allergens (Bauer et al.)', url: 'https://onlinelibrary.wiley.com/doi/10.1111/cod.12333' }
     ]
   }
 ]
