@@ -37,6 +37,7 @@
   }
 }
 
+/* Scanner */
 .scanner-container video {
   object-fit: cover;
   width: 100%;
@@ -58,10 +59,26 @@
   50% { top: 85%; }
 }
 
+/* Ingredient rows */
 .ingredient-row {
-  @apply flex items-start gap-3 py-3 border-b border-slate-800 last:border-0 animate-fade-in;
+  @apply flex items-start gap-3 py-3 border-b border-slate-800 last:border-0;
 }
 
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in  { animation: fadeIn  0.25s ease both; }
+.animate-slide-up { animation: slideUp 0.3s ease both; }
+
+/* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
