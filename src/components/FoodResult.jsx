@@ -71,7 +71,6 @@ function NovaBadge({ group }) {
   const num = parseInt(group, 10)
   if (!num || !NOVA_INFO[num]) return null
 
-  // After the tooltip mounts, clamp it so it never overflows the viewport
   useEffect(() => {
     if (!open || !tipRef.current) return
     const tip = tipRef.current
@@ -119,12 +118,13 @@ function NovaBadge({ group }) {
             </span>
           ))}
           <a
-            href="https://www.fao.org/nutrition/education/food-dietary-guidelines/background/sustainable-dietary-guidelines/en/"
+            href="https://doi.org/10.1017/S1368980018000, https://world.openfoodfacts.org/nova"
+            href="https://world.openfoodfacts.org/nova"
             target="_blank"
             rel="noopener noreferrer"
             className="block mt-2 text-brand-400 underline underline-offset-2"
           >
-            About NOVA (Monteiro et al.)
+            About NOVA (Monteiro et al.) — Open Food Facts
           </a>
         </span>
       )}

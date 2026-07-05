@@ -53,7 +53,7 @@ const ADDITIVE_CHECKS = [
   {
     match: 'aspartame',
     label: 'Aspartame (E951)',
-    detail: 'Approved by EFSA and FDA within established ADI limits (40mg/kg/day). In 2023, IARC classified aspartame as “possibly carcinogenic” (Group 2B) at very high intakes, but EFSA and WHO concluded current ADI remains safe for the general population.',
+    detail: 'Approved by EFSA and FDA within established ADI limits (40mg/kg/day). In 2023, IARC classified aspartame as "possibly carcinogenic" (Group 2B) at very high intakes, but EFSA and WHO concluded current ADI remains safe for the general population.',
     sources: [
       { label: 'IARC/WHO/FAO — Aspartame hazard and risk assessment (2023)', url: 'https://www.iarc.who.int/wp-content/uploads/2023/07/PR350_E.pdf' },
       { label: 'EFSA — Re-evaluation of aspartame (2013)', url: 'https://www.efsa.europa.eu/en/efsajournal/pub/3496' }
@@ -64,14 +64,14 @@ const ADDITIVE_CHECKS = [
     label: 'Sucralose (E955)',
     detail: 'Approved by EFSA and FDA. Generally considered safe at typical dietary intakes. Some studies suggest possible effects on gut microbiota at high doses; evidence is not conclusive at normal consumption levels.',
     sources: [
-      { label: 'EFSA — Opinion on sucralose (2000)', url: 'https://www.efsa.europa.eu/en/efsajournal/pub/3454' },
+      { label: 'EFSA — Re-evaluation of sucralose (E955) as a food additive (2017)', url: 'https://www.efsa.europa.eu/en/efsajournal/pub/4765' },
       { label: 'FDA — Additional information on high-intensity sweeteners', url: 'https://www.fda.gov/food/food-additives-petitions/additional-information-about-high-intensity-sweeteners-permitted-use-food-united-states' }
     ]
   },
   {
     match: 'monosodium glutamate',
     label: 'MSG (E621)',
-    detail: 'Approved flavour enhancer considered safe by EFSA and FDA. Rigorous double-blind studies have not confirmed “MSG sensitivity” as a reproducible syndrome. Naturally present in tomatoes, parmesan, and soy sauce.',
+    detail: 'Approved flavour enhancer considered safe by EFSA and FDA. Rigorous double-blind studies have not confirmed "MSG sensitivity" as a reproducible syndrome. Naturally present in tomatoes, parmesan, and soy sauce.',
     sources: [
       { label: 'EFSA — Re-evaluation of glutamic acid and glutamates (2017)', url: 'https://www.efsa.europa.eu/en/efsajournal/pub/4910' },
       { label: 'Geha et al. — Multicenter double-blind trial on MSG sensitivity (2000)', url: 'https://doi.org/10.1093/jn/130.4.1058S' }
@@ -115,7 +115,7 @@ const ADDITIVE_CHECKS = [
   {
     match: 'red 40',
     label: 'Red 40 / Allura Red (E129)',
-    detail: 'Approved synthetic food dye. One of the “Southampton Six” — a combination of artificial colours linked to increased hyperactivity in children (McCann et al., Lancet 2007). EU requires the warning: “may have an adverse effect on activity and attention in children”.',
+    detail: 'Approved synthetic food dye. One of the "Southampton Six" — a combination of artificial colours linked to increased hyperactivity in children (McCann et al., Lancet 2007). EU requires the warning: "may have an adverse effect on activity and attention in children".',
     sources: [
       { label: 'McCann et al. — Food additives and hyperactivity (Lancet, 2007)', url: 'https://doi.org/10.1016/S0140-6736(07)61306-3' },
       { label: 'EFSA — Opinion on Southampton colours (2008)', url: 'https://www.efsa.europa.eu/en/efsajournal/pub/660' }
@@ -124,7 +124,7 @@ const ADDITIVE_CHECKS = [
   {
     match: 'tartrazine',
     label: 'Tartrazine (E102)',
-    detail: 'Approved yellow food dye. One of the “Southampton Six” — linked to increased hyperactivity in children (McCann et al., Lancet 2007). EU requires the warning: “may have an adverse effect on activity and attention in children”.',
+    detail: 'Approved yellow food dye. One of the "Southampton Six" — linked to increased hyperactivity in children (McCann et al., Lancet 2007). EU requires the warning: "may have an adverse effect on activity and attention in children".',
     sources: [
       { label: 'McCann et al. — Food additives and hyperactivity (Lancet, 2007)', url: 'https://doi.org/10.1016/S0140-6736(07)61306-3' },
       { label: 'EFSA — Opinion on Southampton colours (2008)', url: 'https://www.efsa.europa.eu/en/efsajournal/pub/660' }
@@ -157,24 +157,24 @@ export function analyseFoodProduct(product) {
 
   const flags = []
   if (salt !== null && salt >= 1.5)
-    flags.push({ level: 'high',     label: 'High salt',              detail: `${salt}g per 100g — above the UK FSA “high” threshold of 1.5g/100g.`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'high',     label: 'High salt',              detail: `${salt}g per 100g — above the UK FSA "high" threshold of 1.5g/100g.`, sources: NUTRIENT_SOURCES })
   else if (salt !== null && salt >= 0.3)
-    flags.push({ level: 'moderate', label: 'Moderate salt',          detail: `${salt}g per 100g (UK FSA “medium” band: 0.3–1.5g/100g).`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'moderate', label: 'Moderate salt',          detail: `${salt}g per 100g (UK FSA "medium" band: 0.3–1.5g/100g).`, sources: NUTRIENT_SOURCES })
 
   if (sugar !== null && sugar >= 22.5)
-    flags.push({ level: 'high',     label: 'High sugar',             detail: `${sugar}g per 100g — above the UK FSA “high” threshold of 22.5g/100g.`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'high',     label: 'High sugar',             detail: `${sugar}g per 100g — above the UK FSA "high" threshold of 22.5g/100g.`, sources: NUTRIENT_SOURCES })
   else if (sugar !== null && sugar >= 5)
-    flags.push({ level: 'moderate', label: 'Moderate sugar',         detail: `${sugar}g per 100g (UK FSA “medium” band: 5–22.5g/100g).`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'moderate', label: 'Moderate sugar',         detail: `${sugar}g per 100g (UK FSA "medium" band: 5–22.5g/100g).`, sources: NUTRIENT_SOURCES })
 
   if (saturatedFat !== null && saturatedFat >= 5)
-    flags.push({ level: 'high',     label: 'High saturated fat',     detail: `${saturatedFat}g per 100g — above the UK FSA “high” threshold of 5g/100g.`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'high',     label: 'High saturated fat',     detail: `${saturatedFat}g per 100g — above the UK FSA "high" threshold of 5g/100g.`, sources: NUTRIENT_SOURCES })
   else if (saturatedFat !== null && saturatedFat >= 1.5)
-    flags.push({ level: 'moderate', label: 'Moderate saturated fat', detail: `${saturatedFat}g per 100g (UK FSA “medium” band: 1.5–5g/100g).`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'moderate', label: 'Moderate saturated fat', detail: `${saturatedFat}g per 100g (UK FSA "medium" band: 1.5–5g/100g).`, sources: NUTRIENT_SOURCES })
 
   if (protein !== null && protein >= 10)
     flags.push({ level: 'good', label: 'Good source of protein', detail: `${protein}g protein per 100g.`, sources: NUTRIENT_SOURCES })
   if (fiber !== null && fiber >= 3)
-    flags.push({ level: 'good', label: 'Source of fibre', detail: `${fiber}g fibre per 100g — meets the EU “source of fibre” criterion (≥3g/100g, EU Reg. 1924/2006).`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'good', label: 'Source of fibre', detail: `${fiber}g fibre per 100g — meets the EU "source of fibre" criterion (≥3g/100g, EU Reg. 1924/2006).`, sources: NUTRIENT_SOURCES })
 
   const ingredientsText = (product.ingredients_text || '').toLowerCase()
   const additiveFlags = []
@@ -220,7 +220,7 @@ export function analyseFoodProduct(product) {
     }
     if (flags.some(f => f.level === 'good' && f.label.includes('fibre'))) {
       healthScore += 10
-      scoreReasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g, meets EU “source of fibre” criterion) boosts the score.`, sources: NUTRIENT_SOURCES })
+      scoreReasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g, meets EU "source of fibre" criterion) boosts the score.`, sources: NUTRIENT_SOURCES })
     }
     healthScore = Math.max(5, Math.min(95, healthScore))
   }
