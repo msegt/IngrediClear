@@ -14,24 +14,31 @@ function Logo() {
   )
 }
 
-export default function Header({ productType, onProductTypeChange }) {
+export default function Header({ productType, onProductTypeChange, onGoHome }) {
   return (
     <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/60">
       <div
         className="flex items-center gap-3 px-4 py-3"
         style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
       >
-        <Logo />
-        <div className="flex-1 min-w-0">
-          <h1 className="text-base font-bold text-white leading-none">IngrediClear</h1>
-          <p className="text-xs text-slate-500 leading-none mt-0.5">Know what's in your products</p>
-        </div>
+        {/* Logo + title — tap to go home */}
+        <button
+          onClick={onGoHome}
+          aria-label="Go to home screen"
+          className="flex items-center gap-2.5 min-w-0 flex-1 active:opacity-70 transition-opacity"
+        >
+          <Logo />
+          <div className="min-w-0 text-left">
+            <p className="text-base font-bold text-white leading-none">IngrediClear</p>
+            <p className="text-xs text-slate-500 leading-none mt-0.5">Tap to go home</p>
+          </div>
+        </button>
 
-        {/* Labelled product-type toggle — clear text, proper ARIA */}
+        {/* Product type toggle */}
         <div
           role="group"
           aria-label="Product type"
-          className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800"
+          className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 flex-shrink-0"
         >
           {[
             { id: 'cosmetics', label: 'Cosmetics' },

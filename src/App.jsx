@@ -14,13 +14,19 @@ import { fetchFoodProduct } from './api/openFoodFacts.js'
 import { saveToHistory, getHistory } from './data/history.js'
 
 export default function App() {
-  const [screen, setScreen]           = useState('landing')   // 'landing' | 'main'
+  const [screen, setScreen]           = useState('landing')
   const [productType, setProductType] = useState('cosmetics')
   const [activeTab, setActiveTab]     = useState('scan')
   const [product, setProduct]         = useState(null)
   const [loading, setLoading]         = useState(false)
   const [error, setError]             = useState(null)
   const [history, setHistory]         = useState(getHistory())
+
+  const goHome = () => {
+    setScreen('landing')
+    setProduct(null)
+    setError(null)
+  }
 
   const handleBarcode = async (barcode) => {
     if (!barcode || loading) return
@@ -53,16 +59,16 @@ export default function App() {
 
   const filteredHistory = history.filter(h => h.type === productType)
 
-  // ── Landing page ────────────────────────────────────────────────────────────
+  // ── Landing page
   if (screen === 'landing') {
     return <LandingPage onGetStarted={() => setScreen('main')} />
   }
 
-  // ── Result view ─────────────────────────────────────────────────────────────
+  // ── Result view
   if (product && !loading) {
     return (
       <div className="min-h-screen flex flex-col max-w-lg mx-auto">
-        <Header productType={productType} onProductTypeChange={setProductType} />
+        <Header productType={productType} onProductTypeChange={setProductType} onGoHome={goHome} />
         <div className="flex-1 px-4 py-4 animate-slide-up overflow-y-auto">
           {product._type === 'food'
             ? <FoodResult    product={product} onBack={handleReset} />
@@ -72,11 +78,11 @@ export default function App() {
     )
   }
 
-  // ── Loading view ────────────────────────────────────────────────────────────
+  // ── Loading view
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col max-w-lg mx-auto">
-        <Header productType={productType} onProductTypeChange={setProductType} />
+        <Header productType={productType} onProductTypeChange={setProductType} onGoHome={goHome} />
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <LoadingSpinner />
           <p className="text-sm text-slate-400">Looking up product…</p>
@@ -85,10 +91,10 @@ export default function App() {
     )
   }
 
-  // ── Main scanner / entry / history view ─────────────────────────────────────
+  // ── Main scanner / entry / history view
   return (
     <div className="min-h-screen flex flex-col max-w-lg mx-auto">
-      <Header productType={productType} onProductTypeChange={setProductType} />
+      <Header productType={productType} onProductTypeChange={setProductType} onGoHome={goHome} />
 
       <div className="flex-1 px-4 pt-4 pb-2 overflow-y-auto">
         {error && (
@@ -97,9 +103,9 @@ export default function App() {
           </div>
         )}
 
-        {activeTab === 'scan'    && <Scanner    onDetected={handleBarcode} productType={productType} />}
-        {activeTab === 'manual'  && <ManualEntry onSubmit={handleBarcode}  productType={productType} />}
-        {activeTab === 'history' && <ScanHistory history={filteredHistory} onSelect={handleBarcode} productType={productType} />}
+        {activeTab === 'scan'    && <Scanner     onDetected={handleBarcode} productType={productType} />}
+        {activeTab === 'manual'  && <ManualEntry  onSubmit={handleBarcode}   productType={productType} />}
+        {activeTab === 'history' && <ScanHistory  history={filteredHistory}  onSelect={handleBarcode} productType={productType} />}
       </div>
 
       <BottomNav activeTab={activeTab} onTabChange={(tab) => { setError(null); setActiveTab(tab) }} />
