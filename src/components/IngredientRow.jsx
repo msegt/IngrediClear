@@ -41,7 +41,7 @@ function SourceLinks({ sources }) {
           onClick={e => e.stopPropagation()}
           className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2 leading-relaxed"
         >
-          \uD83D\uDD17 {s.label}
+          🔗 {s.label}
         </a>
       ))}
     </div>
@@ -71,7 +71,7 @@ export default function IngredientRow({ item }) {
               <span className="text-xs px-2 py-0.5 rounded-full badge-allergen">Allergen</span>
             )}
             <span className={`text-xs px-2 py-0.5 rounded-full ${config.badge}`}>{config.label}</span>
-            <span aria-hidden="true" className="text-slate-600 text-xs ml-0.5">{expanded ? '\u25B2' : '\u25BC'}</span>
+            <span aria-hidden="true" className="text-slate-600 text-xs ml-0.5">{expanded ? '▲' : '▼'}</span>
           </div>
         </div>
 
@@ -81,12 +81,12 @@ export default function IngredientRow({ item }) {
           <div className="mt-2 flex flex-col gap-2 animate-fade-in">
             {item.concern && (
               <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/60 rounded-lg p-2.5">
-                <span aria-hidden="true">\u26A0\uFE0F </span>{item.concern}
+                <span aria-hidden="true">⚠️ </span>{item.concern}
               </p>
             )}
             {item.alternatives && (
               <div className="bg-emerald-900/30 border border-emerald-800/40 rounded-lg p-2.5">
-                <p className="text-xs font-semibold text-emerald-400 mb-1"><span aria-hidden="true">\u2705 </span>Safer alternatives</p>
+                <p className="text-xs font-semibold text-emerald-400 mb-1"><span aria-hidden="true">✅ </span>Safer alternatives</p>
                 <p className="text-xs text-slate-300 leading-relaxed">{item.alternatives}</p>
               </div>
             )}

@@ -43,7 +43,7 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
   return (
     <div className="flex flex-col gap-4">
 
-      {/* Mode toggle — labelled, ARIA */}
+      {/* Mode toggle */}
       <div
         role="group"
         aria-label="Entry method"
@@ -148,7 +148,7 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
                   {(product.image_front_url || product.image_url)
                     ? <img src={product.image_front_url || product.image_url} alt="" aria-hidden="true" className="w-12 h-12 rounded-lg object-contain bg-slate-800 flex-shrink-0" />
                     : <div aria-hidden="true" className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">
-                        {isFood ? '\uD83C\uDF7D\uFE0F' : '\uD83E\uDDF4'}
+                        {isFood ? '🍽️' : '🧴'}
                       </div>
                   }
                   <div className="flex-1 min-w-0">

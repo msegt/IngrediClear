@@ -12,13 +12,13 @@ export default function ScanHistory({ history, onSelect, productType = 'cosmetic
     }
   }
 
-  const fallbackIcon = productType === 'food' ? '\uD83C\uDF7D\uFE0F' : '\uD83E\uDDF4'
+  const fallbackIcon = productType === 'food' ? '🍽️' : '🧴'
   const emptyLabel   = productType === 'food' ? 'food products' : 'cosmetics'
 
   if (!items.length) {
     return (
       <div className="card p-8 flex flex-col items-center text-center gap-3" role="status">
-        <span aria-hidden="true" className="text-4xl">\uD83D\uDD52</span>
+        <span aria-hidden="true" className="text-4xl">🕒</span>
         <p className="font-semibold text-white">No history yet</p>
         <p className="text-sm text-slate-400">
           {emptyLabel.charAt(0).toUpperCase() + emptyLabel.slice(1)} you scan will appear here for quick re-access.
