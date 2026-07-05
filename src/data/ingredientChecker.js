@@ -5,6 +5,8 @@
 // - EU Scientific Committee on Consumer Safety (SCCS): https://health.ec.europa.eu/scientific-committees/scientific-committee-consumer-safety-sccs_en
 // - EWG Skin Deep (indicative hazard scores): https://www.ewg.org/skindeep/
 
+import { getIngredientDescription } from './ingredientDescriptions.js'
+
 const HARMFUL_INGREDIENTS = [
   {
     names: ['formaldehyde', 'formalin', 'methanal'],
@@ -264,7 +266,7 @@ export function parseIngredients(text) {
   if (!text) return []
   return text
     .split(/[,;]/)
-    .map(s => s.replace(/[*·•\[\]()]/g, '').trim())
+    .map(s => s.replace(/[*\u00b7\u2022\[\]()]/g, '').trim())
     .filter(s => s.length > 1)
 }
 
@@ -299,6 +301,17 @@ export function analyseIngredients(text) {
       }
     }
 
-    return { name: raw, rating: 'safe', isAllergen: false, concern: null, hazardScore: null, alternatives: null, sources: [] }
+    // Safe or unknown — attach a brief description if one exists
+    const description = getIngredientDescription(raw)
+    return {
+      name: raw,
+      rating: 'safe',
+      isAllergen: false,
+      concern: null,
+      description,          // brief plain-language role, shown as subtitle
+      hazardScore: null,
+      alternatives: null,
+      sources: []
+    }
   })
 }
