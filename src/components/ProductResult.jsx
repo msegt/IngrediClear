@@ -2,9 +2,11 @@ import React, { useMemo, useState } from 'react'
 import { analyseIngredients } from '../data/ingredientChecker.js'
 import { detectCategory, getCategoryWarnings } from '../data/categoryDetector.js'
 import IngredientRow from './IngredientRow.jsx'
+import ImageLightbox from './ImageLightbox.jsx'
 
 export default function ProductResult({ product, onBack }) {
-  const [showAll, setShowAll] = useState(false)
+  const [showAll, setShowAll]         = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const hasIngredients = !!(product.ingredients_text && product.ingredients_text.trim().length > 0)
   const analysed = useMemo(() => analyseIngredients(product.ingredients_text || ''), [product])
@@ -24,9 +26,6 @@ export default function ProductResult({ product, onBack }) {
     return groups
   }, [analysed])
 
-  // Overall label: allergens alone no longer escalate to caution — they are safe for most people.
-  // Only harmful ingredients or caution-rated ingredients (which include allergens that also have
-  // an independent caution flag) trigger a non-green label.
   const overallScore = useMemo(() => {
     if (!hasIngredients) return 'unknown'
     if (harmful.length > 0) return 'harmful'
@@ -52,10 +51,10 @@ export default function ProductResult({ product, onBack }) {
   }, [overallScore, hasIngredients, harmful, caution, allergens, unknown])
 
   const scoreConfig = {
-    safe:    { emoji: '✅', label: 'Generally Safe',               color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
-    caution: { emoji: '⚠️', label: 'Use with Caution',            color: 'text-yellow-400',  bg: 'bg-yellow-500/10 border-yellow-500/30'  },
-    harmful: { emoji: '�deab', label: 'Harmful Ingredients Detected', color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/30'        },
-    unknown: { emoji: '❓', label: 'Ingredients Not Available',    color: 'text-slate-400',  bg: 'bg-slate-700/40 border-slate-600/40'    }
+    safe:    { emoji: '✅', label: 'Generally Safe',                color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+    caution: { emoji: '⚠️', label: 'Use with Caution',             color: 'text-yellow-400',  bg: 'bg-yellow-500/10 border-yellow-500/30'  },
+    harmful: { emoji: '🚫', label: 'Harmful Ingredients Detected',  color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/30'         },
+    unknown: { emoji: '❓', label: 'Ingredients Not Available',     color: 'text-slate-400',  bg: 'bg-slate-700/40 border-slate-600/40'     }
   }
   const score = scoreConfig[overallScore]
   const imageUrl = product.image_url || product.image_front_url
@@ -72,6 +71,14 @@ export default function ProductResult({ product, onBack }) {
 
   return (
     <div className="flex flex-col gap-4 pb-8">
+      {lightboxOpen && imageUrl && (
+        <ImageLightbox
+          src={imageUrl}
+          alt={product.product_name || 'Product image'}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium">
           ← Scan another
@@ -84,10 +91,21 @@ export default function ProductResult({ product, onBack }) {
       {/* Product header */}
       <div className="card p-4 flex gap-4 items-start">
         {imageUrl && (
-          <img src={imageUrl} alt={product.product_name}
-            className="w-20 h-20 object-contain rounded-xl bg-slate-800 flex-shrink-0"
-            onError={e => e.target.style.display = 'none'}
-          />
+          <button
+            onClick={() => setLightboxOpen(true)}
+            aria-label={`View full-size image of ${product.product_name || 'product'}`}
+            className="relative flex-shrink-0 rounded-xl overflow-hidden group focus-visible:ring-2 focus-visible:ring-brand-400"
+          >
+            <img
+              src={imageUrl}
+              alt={product.product_name || 'Product'}
+              className="w-20 h-20 object-contain bg-slate-800 transition group-hover:brightness-75"
+              onError={e => e.target.parentElement.style.display = 'none'}
+            />
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition pointer-events-none">
+              <span className="text-white text-xl drop-shadow-lg">🔍</span>
+            </div>
+          </button>
         )}
         <div className="flex-1 min-w-0">
           <h2 className="font-bold text-white text-lg leading-tight">{product.product_name || 'Unknown Product'}</h2>
@@ -114,7 +132,7 @@ export default function ProductResult({ product, onBack }) {
 
       {/* Overall score */}
       <div className={`card p-4 border ${score.bg} flex items-center gap-4`}>
-        <span className="text-4xl">{score.emoji}</span>
+        <span className="text-4xl" aria-hidden="true">{score.emoji}</span>
         <div className="flex-1 min-w-0">
           <p className={`font-bold text-lg ${score.color}`}>{score.label}</p>
           <p className="text-xs text-slate-400 mt-1 leading-relaxed">{scoreReason}</p>
@@ -141,16 +159,16 @@ export default function ProductResult({ product, onBack }) {
       {/* Unknown ingredients disclaimer */}
       {hasIngredients && unknown.length > 0 && (
         <div className="card p-3 border border-slate-600/40 bg-slate-700/20 flex gap-3 items-start">
-          <span className="text-lg mt-0.5">❓</span>
+          <span className="text-lg mt-0.5" aria-hidden="true">❓</span>
           <p className="text-xs text-slate-400 leading-relaxed">
             <span className="font-semibold text-slate-300">{unknown.length} ingredient{unknown.length > 1 ? 's' : ''} not in our database</span> and could not be assessed. This does not mean they are safe — it means we have no data on them.
           </p>
         </div>
       )}
 
-      {hasIngredients && harmful.length > 0 && <IngredientSection title="�deab Harmful Ingredients" items={harmful} />}
-      {hasIngredients && caution.length > 0  && <IngredientSection title="⚠️ Use with Caution" items={caution} />}
-      {hasIngredients && allergens.length > 0 && (
+      {hasIngredients && harmful.length > 0  && <IngredientSection title="🚫 Harmful Ingredients" items={harmful} />}
+      {hasIngredients && caution.length > 0   && <IngredientSection title="⚠️ Use with Caution" items={caution} />}
+      {hasIngredients && allergens.length > 0  && (
         <IngredientSection
           title="🤧 Fragrance Allergens Detected"
           items={allergens}
@@ -163,9 +181,10 @@ export default function ProductResult({ product, onBack }) {
           <button
             onClick={() => setShowAll(v => !v)}
             className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-400 hover:text-white transition"
+            aria-expanded={showAll}
           >
             <span>✅ Safe & unclassified ({safe.length + unknown.length})</span>
-            <span className="text-xs">{showAll ? '▲ Hide' : '▼ Show'}</span>
+            <span className="text-xs" aria-hidden="true">{showAll ? '▲ Hide' : '▼ Show'}</span>
           </button>
           {showAll && (
             <div className="px-4 pb-3">
@@ -177,7 +196,7 @@ export default function ProductResult({ product, onBack }) {
 
       {!hasIngredients && (
         <div className="card p-6 flex flex-col items-center text-center gap-3">
-          <span className="text-4xl">📋</span>
+          <span className="text-4xl" aria-hidden="true">📋</span>
           <p className="font-semibold text-white">No ingredient list available</p>
           <p className="text-sm text-slate-400">
             This product is in the Open Beauty Facts database but has no ingredient data yet.

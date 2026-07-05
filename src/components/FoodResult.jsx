@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { analyseFoodProduct } from '../data/foodChecker.js'
 import NutritionGauge from './NutritionGauge.jsx'
+import ImageLightbox from './ImageLightbox.jsx'
 
 function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
@@ -23,21 +24,41 @@ function SourceLinks({ sources }) {
 }
 
 export default function FoodResult({ product, onBack }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const analysis = analyseFoodProduct(product)
   const imageUrl = product.image_front_url || product.image_url
 
   return (
     <div className="flex flex-col gap-4 pb-8">
+      {lightboxOpen && imageUrl && (
+        <ImageLightbox
+          src={imageUrl}
+          alt={product.product_name || 'Food product image'}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+
       <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium">
         ← Scan another
       </button>
 
       <div className="card p-4 flex gap-4 items-start">
         {imageUrl && (
-          <img src={imageUrl} alt={product.product_name}
-            className="w-20 h-20 object-contain rounded-xl bg-slate-800 flex-shrink-0"
-            onError={e => e.target.style.display = 'none'}
-          />
+          <button
+            onClick={() => setLightboxOpen(true)}
+            aria-label={`View full-size image of ${product.product_name || 'product'}`}
+            className="relative flex-shrink-0 rounded-xl overflow-hidden group focus-visible:ring-2 focus-visible:ring-brand-400"
+          >
+            <img
+              src={imageUrl}
+              alt={product.product_name || 'Product'}
+              className="w-20 h-20 object-contain bg-slate-800 transition group-hover:brightness-75"
+              onError={e => e.target.parentElement.style.display = 'none'}
+            />
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition pointer-events-none">
+              <span className="text-white text-xl drop-shadow-lg">🔍</span>
+            </div>
+          </button>
         )}
         <div className="flex-1 min-w-0">
           <h2 className="font-bold text-white text-lg leading-tight">{product.product_name || 'Unknown food item'}</h2>
