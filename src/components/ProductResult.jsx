@@ -15,6 +15,7 @@ export default function ProductResult({ product, onBack }) {
     const groups = { harmful: [], allergens: [], caution: [], safe: [], unknown: [] }
     for (const item of analysed) {
       if (item.rating === 'harmful') groups.harmful.push(item)
+      else if (item.isAllergen && item.rating === 'caution') groups.caution.push(item)
       else if (item.isAllergen) groups.allergens.push(item)
       else if (item.rating === 'caution') groups.caution.push(item)
       else if (item.rating === 'safe') groups.safe.push(item)
@@ -23,33 +24,32 @@ export default function ProductResult({ product, onBack }) {
     return groups
   }, [analysed])
 
-  // Overall label logic:
-  // - Any harmful ingredient → Harmful
-  // - Any allergen OR any caution-flagged ingredient → Use with Caution
-  // - Otherwise → Generally Safe
-  // "caution > 2" threshold removed — there is no evidence basis for ignoring 1–2 caution flags
+  // Overall label: allergens alone no longer escalate to caution — they are safe for most people.
+  // Only harmful ingredients or caution-rated ingredients (which include allergens that also have
+  // an independent caution flag) trigger a non-green label.
   const overallScore = useMemo(() => {
     if (!hasIngredients) return 'unknown'
     if (harmful.length > 0) return 'harmful'
-    if (allergens.length > 0 || caution.length > 0) return 'caution'
+    if (caution.length > 0) return 'caution'
     return 'safe'
-  }, [hasIngredients, harmful, allergens, caution])
+  }, [hasIngredients, harmful, caution])
 
-  // Human-readable explanation of why the label was assigned
   const scoreReason = useMemo(() => {
     if (!hasIngredients) return 'No ingredient list available — safety cannot be assessed.'
     if (overallScore === 'harmful') {
       return `${harmful.length} ingredient${harmful.length > 1 ? 's' : ''} matched a known or suspected hazard. See details below.`
     }
     if (overallScore === 'caution') {
-      const parts = []
-      if (allergens.length > 0) parts.push(`${allergens.length} EU-listed fragrance allergen${allergens.length > 1 ? 's' : ''} (affects sensitised individuals)`)
-      if (caution.length > 0)   parts.push(`${caution.length} ingredient${caution.length > 1 ? 's' : ''} with a use-with-caution flag`)
-      return parts.join(' · ') + '. See details below.'
+      return `${caution.length} ingredient${caution.length > 1 ? 's' : ''} with a use-with-caution flag. See details below.`
     }
-    const unknownNote = unknown.length > 0 ? ` ${unknown.length} ingredient${unknown.length > 1 ? 's' : ''} were not in our database and could not be assessed.` : ''
-    return `No harmful or flagged ingredients detected in our database.${unknownNote}`
-  }, [overallScore, hasIngredients, harmful, allergens, caution, unknown])
+    const allergenNote = allergens.length > 0
+      ? ` Contains ${allergens.length} EU-listed fragrance allergen${allergens.length > 1 ? 's' : ''} — safe for most people, but avoid if you have a sensitivity to ${allergens.length > 1 ? 'these ingredients' : 'this ingredient'}.`
+      : ''
+    const unknownNote = unknown.length > 0
+      ? ` ${unknown.length} ingredient${unknown.length > 1 ? 's' : ''} were not in our database and could not be assessed.`
+      : ''
+    return `No harmful or flagged ingredients detected.${allergenNote}${unknownNote}`
+  }, [overallScore, hasIngredients, harmful, caution, allergens, unknown])
 
   const scoreConfig = {
     safe:    { emoji: '✅', label: 'Generally Safe',               color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
@@ -148,15 +148,15 @@ export default function ProductResult({ product, onBack }) {
         </div>
       )}
 
-      {hasIngredients && harmful.length > 0   && <IngredientSection title="�deab Harmful Ingredients" items={harmful} />}
-      {hasIngredients && allergens.length > 0  && (
+      {hasIngredients && harmful.length > 0 && <IngredientSection title="�deab Harmful Ingredients" items={harmful} />}
+      {hasIngredients && caution.length > 0  && <IngredientSection title="⚠️ Use with Caution" items={caution} />}
+      {hasIngredients && allergens.length > 0 && (
         <IngredientSection
-          title="🤧 Allergens"
+          title="🤧 Fragrance Allergens Detected"
           items={allergens}
-          note="EU-listed fragrance allergens that must be declared on product labels. These cause reactions in sensitised individuals — they are not a risk for everyone."
+          note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them. If you have an allergy or sensitivity to any of these, do not use this product."
         />
       )}
-      {hasIngredients && caution.length > 0    && <IngredientSection title="⚠️ Use with Caution" items={caution} />}
 
       {hasIngredients && (safe.length > 0 || unknown.length > 0) && (
         <div className="card">
@@ -175,7 +175,6 @@ export default function ProductResult({ product, onBack }) {
         </div>
       )}
 
-      {/* No ingredient data card */}
       {!hasIngredients && (
         <div className="card p-6 flex flex-col items-center text-center gap-3">
           <span className="text-4xl">📋</span>

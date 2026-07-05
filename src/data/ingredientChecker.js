@@ -289,10 +289,12 @@ export function analyseIngredients(text) {
 
     if (isAllergen) {
       return {
-        name: raw, rating: 'caution', isAllergen: true,
-        concern: 'Listed EU fragrance allergen (Cosmetics Regulation Annex III). Must be declared on labels above 0.01% in leave-on and 0.1% in rinse-off products. May cause allergic reactions in sensitised individuals.',
-        hazardScore: 4,
-        alternatives: 'Choose fragrance-free products or those that fully disclose individual fragrance components.',
+        name: raw,
+        rating: 'safe',
+        isAllergen: true,
+        concern: 'Generally safe for most people — this ingredient is permitted in cosmetics and poses no known risk to the general population. However, if you have a known allergy or sensitivity to this ingredient, you should avoid this product. It is an EU-listed fragrance allergen (Cosmetics Regulation Annex III), which means manufacturers are legally required to declare it on the label above 0.01% in leave-on and 0.1% in rinse-off products, precisely so that people with sensitivities can identify and avoid it.',
+        hazardScore: 2,
+        alternatives: 'If you are sensitised to this ingredient, choose fragrance-free products or those that fully disclose individual fragrance components so you can check each one.',
         sources: ALLERGEN_SOURCES
       }
     }
