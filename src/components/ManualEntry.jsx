@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { searchProductsByName } from '../api/openBeautyFacts.js'
+import { searchProductsByName }     from '../api/openBeautyFacts.js'
 import { searchFoodProductsByName } from '../api/openFoodFacts.js'
+import IngredientCapture            from './IngredientCapture.jsx'
 
-export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
+export default function ManualEntry({ onSubmit, onIngredients, productType = 'cosmetics' }) {
   const [mode, setMode]               = useState('barcode')
   const [value, setValue]             = useState('')
   const [results, setResults]         = useState([])
@@ -40,6 +41,13 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
 
   const handleSelectResult = (product) => onSubmit(product.code || product.id)
 
+  const modes = [
+    { id: 'barcode',    label: 'Barcode' },
+    { id: 'name',       label: 'Search' },
+    // Show paste/photo only for cosmetics where database gaps are common
+    ...(!isFood ? [{ id: 'ingredients', label: '📋 Paste / Photo' }] : [])
+  ]
+
   return (
     <div className="flex flex-col gap-4">
 
@@ -49,10 +57,7 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
         aria-label="Entry method"
         className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800"
       >
-        {[
-          { id: 'barcode', label: 'Barcode number' },
-          { id: 'name',    label: 'Search by name' },
-        ].map(m => (
+        {modes.map(m => (
           <button
             key={m.id}
             aria-pressed={mode === m.id}
@@ -68,9 +73,9 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
         ))}
       </div>
 
-      {/* Input card */}
-      <div className="card p-5">
-        {mode === 'barcode' ? (
+      {/* ── Barcode input ─────────────────────────────────────────────── */}
+      {mode === 'barcode' && (
+        <div className="card p-5">
           <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
             <label htmlFor="barcode-input" className="text-sm text-slate-400">
               Type the number printed beneath the barcode stripes.
@@ -95,7 +100,12 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
               Check product
             </button>
           </form>
-        ) : (
+        </div>
+      )}
+
+      {/* ── Name search ───────────────────────────────────────────────── */}
+      {mode === 'name' && (
+        <div className="card p-5">
           <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
             <label htmlFor="name-input" className="text-sm text-slate-400">
               {nameHint}
@@ -121,8 +131,13 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
                 : 'Search products'}
             </button>
           </form>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* ── Paste / Photo ─────────────────────────────────────────────── */}
+      {mode === 'ingredients' && (
+        <IngredientCapture onAnalyse={onIngredients} />
+      )}
 
       {/* Search error */}
       {searchError && (
