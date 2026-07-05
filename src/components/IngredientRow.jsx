@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { FUNCTION_LABELS } from '../data/cosingData.js'
 
 const RATING_CONFIG = {
   harmful: { badge: 'badge-harmful', dot: 'bg-red-500',     label: 'Harmful'  },
@@ -79,10 +80,21 @@ export default function IngredientRow({ item }) {
             {item.description && !item.concern && (
               <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.description}</p>
             )}
+            {item.cosing?.functions?.length > 0 && (
+              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                {item.cosing.functions.map(f => FUNCTION_LABELS[f] || f).join(' · ')}
+              </p>
+            )}
           </div>
-          <div className="flex gap-1 flex-shrink-0 items-center">
+          <div className="flex gap-1 flex-shrink-0 items-center flex-wrap justify-end">
             {item.isAllergen && (
               <span className="text-xs px-2 py-0.5 rounded-full badge-allergen">Allergen</span>
+            )}
+            {item.cosing?.eu === 'restricted' && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-400 border border-amber-800/40">EU Restricted</span>
+            )}
+            {item.cosing?.eu === 'prohibited' && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/40 text-red-400 border border-red-800/40">EU Prohibited</span>
             )}
             <span className={`text-xs px-2 py-0.5 rounded-full ${config.badge}`}>{config.label}</span>
             {hasDetail && (
@@ -107,6 +119,17 @@ export default function IngredientRow({ item }) {
               </div>
             )}
             <SourceLinks sources={item.sources} />
+            {item.cosing && (
+              <a
+                href={`https://ec.europa.eu/growth/tools-databases/cosing/details/${encodeURIComponent(item.name)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="text-xs text-slate-500 hover:text-brand-400 underline underline-offset-2"
+              >
+                🔍 Search this ingredient on EU CosIng ↗
+              </a>
+            )}
           </div>
         )}
       </div>
