@@ -41,7 +41,7 @@ function SourceLinks({ sources }) {
           onClick={e => e.stopPropagation()}
           className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2 leading-relaxed"
         >
-          \uD83D\uDD17 {s.label}
+          🔗 {s.label}
         </a>
       ))}
     </div>
@@ -52,8 +52,6 @@ export default function IngredientRow({ item }) {
   const [expanded, setExpanded] = useState(false)
   const config = RATING_CONFIG[item.rating] || RATING_CONFIG.unknown
 
-  // Safe/unknown items with no concern but a description are non-interactive
-  // unless there is something meaningful to expand
   const hasDetail = !!(item.concern || item.alternatives || (item.sources && item.sources.length > 0))
 
   const handleToggle = () => {
@@ -66,8 +64,8 @@ export default function IngredientRow({ item }) {
       tabIndex={hasDetail ? 0 : undefined}
       aria-expanded={hasDetail ? expanded : undefined}
       aria-label={hasDetail
-        ? `${item.name} \u2014 ${config.label}${item.isAllergen ? ', allergen' : ''}. Tap for details.`
-        : `${item.name} \u2014 ${config.label}`
+        ? `${item.name} — ${config.label}${item.isAllergen ? ', allergen' : ''}. Tap for details.`
+        : `${item.name} — ${config.label}`
       }
       onClick={handleToggle}
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleToggle()}
@@ -78,7 +76,6 @@ export default function IngredientRow({ item }) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <span className="text-sm font-medium text-white leading-snug">{item.name}</span>
-            {/* Brief description shown inline for safe/unclassified ingredients */}
             {item.description && !item.concern && (
               <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.description}</p>
             )}
@@ -89,7 +86,7 @@ export default function IngredientRow({ item }) {
             )}
             <span className={`text-xs px-2 py-0.5 rounded-full ${config.badge}`}>{config.label}</span>
             {hasDetail && (
-              <span aria-hidden="true" className="text-slate-600 text-xs ml-0.5">{expanded ? '\u25b2' : '\u25bc'}</span>
+              <span aria-hidden="true" className="text-slate-600 text-xs ml-0.5">{expanded ? '▲' : '▼'}</span>
             )}
           </div>
         </div>
@@ -100,12 +97,12 @@ export default function IngredientRow({ item }) {
           <div className="mt-2 flex flex-col gap-2 animate-fade-in">
             {item.concern && (
               <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/60 rounded-lg p-2.5">
-                <span aria-hidden="true">\u26a0\ufe0f </span>{item.concern}
+                <span aria-hidden="true">⚠️ </span>{item.concern}
               </p>
             )}
             {item.alternatives && (
               <div className="bg-emerald-900/30 border border-emerald-800/40 rounded-lg p-2.5">
-                <p className="text-xs font-semibold text-emerald-400 mb-1"><span aria-hidden="true">\u2705 </span>Safer alternatives</p>
+                <p className="text-xs font-semibold text-emerald-400 mb-1"><span aria-hidden="true">✅ </span>Safer alternatives</p>
                 <p className="text-xs text-slate-300 leading-relaxed">{item.alternatives}</p>
               </div>
             )}
