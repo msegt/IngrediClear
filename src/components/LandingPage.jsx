@@ -44,7 +44,7 @@ export default function LandingPage({ onGetStarted }) {
         >
           Get started →
         </button>
-        <p className="text-xs text-slate-600">Free · No sign-up · Works offline</p>
+        <p className="text-xs text-slate-600">Free · No sign-up · Open data</p>
       </div>
 
       {/* Divider */}
