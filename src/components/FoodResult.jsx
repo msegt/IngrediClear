@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { analyseFoodProduct } from '../data/foodChecker.js'
 import NutritionGauge from './NutritionGauge.jsx'
 import ImageLightbox from './ImageLightbox.jsx'
@@ -66,12 +66,32 @@ const NOVA_INFO = {
 
 function NovaBadge({ group }) {
   const [open, setOpen] = useState(false)
+  const btnRef = useRef(null)
+  const tipRef = useRef(null)
   const num = parseInt(group, 10)
   if (!num || !NOVA_INFO[num]) return null
+
+  // After the tooltip mounts, clamp it so it never overflows the viewport
+  useEffect(() => {
+    if (!open || !tipRef.current) return
+    const tip = tipRef.current
+    const rect = tip.getBoundingClientRect()
+    const vw = window.innerWidth
+    const MARGIN = 12
+    if (rect.right > vw - MARGIN) {
+      tip.style.left = 'auto'
+      tip.style.right = '0'
+    }
+    if (rect.left < MARGIN) {
+      tip.style.left = '0'
+      tip.style.right = 'auto'
+    }
+  }, [open])
 
   return (
     <span className="relative inline-flex">
       <button
+        ref={btnRef}
         type="button"
         aria-label={`NOVA group ${num} — tap for explanation`}
         onClick={() => setOpen(o => !o)}
@@ -82,8 +102,9 @@ function NovaBadge({ group }) {
       </button>
       {open && (
         <span
+          ref={tipRef}
           role="tooltip"
-          className="absolute top-full left-0 mt-2 w-64 rounded-xl bg-slate-800 border border-slate-700 shadow-xl px-3 py-2.5 text-xs text-slate-300 leading-relaxed z-50"
+          className="absolute top-full left-0 mt-2 w-[min(256px,calc(100vw-24px))] rounded-xl bg-slate-800 border border-slate-700 shadow-xl px-3 py-2.5 text-xs text-slate-300 leading-relaxed z-50"
         >
           <span className="block font-semibold text-white mb-2">NOVA food processing scale</span>
           {[1, 2, 3, 4].map(n => (
