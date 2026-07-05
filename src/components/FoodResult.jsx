@@ -58,6 +58,14 @@ function UsdaTooltip() {
   )
 }
 
+// Official NOVA colours used by Open Food Facts / Santé publique France
+const NOVA_COLORS = {
+  1: { bg: '#1d8348', text: '#ffffff', ring: '#1d8348' },
+  2: { bg: '#58b55e', text: '#ffffff', ring: '#58b55e' },
+  3: { bg: '#f07e18', text: '#ffffff', ring: '#f07e18' },
+  4: { bg: '#d63a2f', text: '#ffffff', ring: '#d63a2f' },
+}
+
 const NOVA_INFO = {
   1: { label: 'Unprocessed or minimally processed', detail: 'Natural foods with no or minimal industrial processing — e.g. fruit, vegetables, plain meat, eggs, milk, dried legumes.' },
   2: { label: 'Processed culinary ingredients', detail: 'Substances extracted from foods and used in cooking — e.g. oils, butter, flour, sugar, salt. Not usually eaten on their own.' },
@@ -67,10 +75,11 @@ const NOVA_INFO = {
 
 function NovaBadge({ group }) {
   const [open, setOpen] = useState(false)
-  const btnRef = useRef(null)
   const tipRef = useRef(null)
   const num = parseInt(group, 10)
   if (!num || !NOVA_INFO[num]) return null
+
+  const color = NOVA_COLORS[num]
 
   useEffect(() => {
     if (!open || !tipRef.current) return
@@ -78,57 +87,64 @@ function NovaBadge({ group }) {
     const rect = tip.getBoundingClientRect()
     const vw = window.innerWidth
     const MARGIN = 12
-    if (rect.right > vw - MARGIN) {
-      tip.style.left = 'auto'
-      tip.style.right = '0'
-    }
-    if (rect.left < MARGIN) {
-      tip.style.left = '0'
-      tip.style.right = 'auto'
-    }
+    if (rect.right > vw - MARGIN) { tip.style.left = 'auto'; tip.style.right = '0' }
+    if (rect.left < MARGIN)       { tip.style.left = '0';    tip.style.right = 'auto' }
   }, [open])
 
   return (
-    <span className="relative inline-flex">
-      <button
-        ref={btnRef}
-        type="button"
-        aria-label={`NOVA group ${num} — tap for explanation`}
-        onClick={() => setOpen(o => !o)}
-        onBlur={() => setOpen(false)}
-        className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400"
-      >
-        NOVA {num} ℹ️
-      </button>
-      {open && (
-        <span
-          ref={tipRef}
-          role="tooltip"
-          className="absolute top-full left-0 mt-2 w-[min(256px,calc(100vw-24px))] rounded-xl bg-slate-800 border border-slate-700 shadow-xl px-3 py-2.5 text-xs text-slate-300 leading-relaxed z-50"
+    <div className="flex flex-col gap-1">
+      <p className="text-xs text-slate-400 font-medium">NOVA group</p>
+      <span className="relative inline-flex">
+        <button
+          type="button"
+          aria-label={`NOVA group ${num} — tap for explanation`}
+          onClick={() => setOpen(o => !o)}
+          onBlur={() => setOpen(false)}
+          style={{
+            backgroundColor: color.bg,
+            color: color.text,
+            boxShadow: `0 0 0 2px ${color.ring}44`,
+          }}
+          className="text-sm font-black px-3 py-1.5 rounded-lg transition hover:brightness-110 focus:outline-none focus-visible:ring-2"
         >
-          <span className="block font-semibold text-white mb-2">NOVA food processing scale</span>
-          {[1, 2, 3, 4].map(n => (
-            <span
-              key={n}
-              className={`flex gap-2 mb-1.5 last:mb-0 ${
-                n === num ? 'text-purple-300 font-semibold' : 'text-slate-500'
-              }`}
-            >
-              <span className="shrink-0">{n}.</span>
-              <span>{NOVA_INFO[n].label}{n === num ? ` — ${NOVA_INFO[n].detail}` : ''}</span>
-            </span>
-          ))}
-          <a
-            href="https://world.openfoodfacts.org/nova"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block mt-2 text-brand-400 underline underline-offset-2"
+          {num} ℹ️
+        </button>
+        {open && (
+          <span
+            ref={tipRef}
+            role="tooltip"
+            className="absolute top-full left-0 mt-2 w-[min(256px,calc(100vw-24px))] rounded-xl bg-slate-800 border border-slate-700 shadow-xl px-3 py-2.5 text-xs text-slate-300 leading-relaxed z-50"
           >
-            About NOVA (Monteiro et al.) — Open Food Facts
-          </a>
-        </span>
-      )}
-    </span>
+            <span className="block font-semibold text-white mb-2">NOVA food processing scale</span>
+            {[1, 2, 3, 4].map(n => (
+              <span
+                key={n}
+                className="flex gap-2 mb-1.5 last:mb-0"
+                style={{ color: n === num ? NOVA_COLORS[n].bg : undefined }}
+              >
+                <span
+                  className="shrink-0 font-black text-xs w-4 h-4 rounded flex items-center justify-center text-white"
+                  style={{ backgroundColor: NOVA_COLORS[n].bg, opacity: n === num ? 1 : 0.45 }}
+                >
+                  {n}
+                </span>
+                <span className={n === num ? 'font-semibold text-white' : 'text-slate-500'}>
+                  {NOVA_INFO[n].label}{n === num ? ` — ${NOVA_INFO[n].detail}` : ''}
+                </span>
+              </span>
+            ))}
+            <a
+              href="https://world.openfoodfacts.org/nova"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block mt-2 text-brand-400 underline underline-offset-2"
+            >
+              About NOVA (Monteiro et al.) — Open Food Facts
+            </a>
+          </span>
+        )}
+      </span>
+    </div>
   )
 }
 
@@ -179,9 +195,7 @@ export default function FoodResult({ product, onBack }) {
               <NutriScoreBadge grade={analysis.nutriscore} />
             )}
             {analysis.novaGroup && (
-              <div className="flex flex-col gap-1 justify-end pb-0.5">
-                <NovaBadge group={analysis.novaGroup} />
-              </div>
+              <NovaBadge group={analysis.novaGroup} />
             )}
           </div>
         </div>
