@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { analyseFoodProduct } from '../data/foodChecker.js'
 import NutritionGauge from './NutritionGauge.jsx'
 import ImageLightbox from './ImageLightbox.jsx'
+import NutriScoreBadge from './NutriScoreBadge.jsx'
 
 function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
@@ -118,7 +119,6 @@ function NovaBadge({ group }) {
             </span>
           ))}
           <a
-            href="https://doi.org/10.1017/S1368980018000, https://world.openfoodfacts.org/nova"
             href="https://world.openfoodfacts.org/nova"
             target="_blank"
             rel="noopener noreferrer"
@@ -174,12 +174,14 @@ export default function FoodResult({ product, onBack }) {
           <h2 className="font-bold text-white text-lg leading-tight">{product.product_name || 'Unknown food item'}</h2>
           {product.brands && <p className="text-sm text-slate-400 mt-0.5">{product.brands}</p>}
           {product.categories && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{product.categories}</p>}
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap items-end gap-4 mt-3">
             {analysis.nutriscore && (
-              <span className="text-xs px-2 py-1 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">Nutri-Score {analysis.nutriscore}</span>
+              <NutriScoreBadge grade={analysis.nutriscore} />
             )}
             {analysis.novaGroup && (
-              <NovaBadge group={analysis.novaGroup} />
+              <div className="flex flex-col gap-1 justify-end pb-0.5">
+                <NovaBadge group={analysis.novaGroup} />
+              </div>
             )}
           </div>
         </div>
