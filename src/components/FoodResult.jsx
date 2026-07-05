@@ -23,10 +23,45 @@ function SourceLinks({ sources }) {
   )
 }
 
+function UsdaTooltip() {
+  const [open, setOpen] = useState(false)
+  return (
+    <span className="relative inline-flex items-center">
+      <button
+        type="button"
+        aria-label="Nutrition data source information"
+        onClick={() => setOpen(o => !o)}
+        onBlur={() => setOpen(false)}
+        className="ml-1.5 w-4 h-4 rounded-full bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white transition text-[10px] font-bold leading-none flex items-center justify-center focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-400"
+      >
+        i
+      </button>
+      {open && (
+        <span
+          role="tooltip"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-xl bg-slate-800 border border-slate-700 shadow-xl px-3 py-2 text-xs text-slate-300 leading-relaxed z-50"
+        >
+          Some nutrition values were supplemented from{' '}
+          <a
+            href="https://fdc.nal.usda.gov/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-400 underline underline-offset-2"
+          >
+            USDA FoodData Central
+          </a>{' '}
+          because Open Food Facts had incomplete data for this product.
+        </span>
+      )}
+    </span>
+  )
+}
+
 export default function FoodResult({ product, onBack }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const analysis = analyseFoodProduct(product)
   const imageUrl = product.image_front_url || product.image_url
+  const usdaEnriched = !!product._usdaEnriched
 
   return (
     <div className="flex flex-col gap-4 pb-8">
@@ -128,23 +163,31 @@ export default function FoodResult({ product, onBack }) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        {[
-          { label: 'Sugar',    value: analysis.nutrients.sugar,        unit: 'g/100g' },
-          { label: 'Salt',     value: analysis.nutrients.salt,         unit: 'g/100g' },
-          { label: 'Sat. fat', value: analysis.nutrients.saturatedFat, unit: 'g/100g' },
-          { label: 'Fibre',    value: analysis.nutrients.fiber,        unit: 'g/100g' }
-        ].map(item => (
-          <div key={item.label} className="card p-3 text-center">
-            <p className="text-xs text-slate-400">{item.label}</p>
-            <p className="text-lg font-bold text-white mt-1">{item.value ?? '–'}</p>
-            <p className="text-xs text-slate-600">{item.unit}</p>
-          </div>
-        ))}
+      <div className="card p-4">
+        <div className="flex items-center mb-3">
+          <p className="text-sm font-semibold text-white">Nutrition per 100g</p>
+          {usdaEnriched && <UsdaTooltip />}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: 'Sugar',    value: analysis.nutrients.sugar,        unit: 'g/100g' },
+            { label: 'Salt',     value: analysis.nutrients.salt,         unit: 'g/100g' },
+            { label: 'Sat. fat', value: analysis.nutrients.saturatedFat, unit: 'g/100g' },
+            { label: 'Fibre',    value: analysis.nutrients.fiber,        unit: 'g/100g' }
+          ].map(item => (
+            <div key={item.label} className="bg-slate-800/60 rounded-xl p-3 text-center">
+              <p className="text-xs text-slate-400">{item.label}</p>
+              <p className="text-lg font-bold text-white mt-1">{item.value ?? '–'}</p>
+              <p className="text-xs text-slate-600">{item.unit}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <p className="text-center text-xs text-slate-600 px-4">
-        Data from Open Food Facts (ODbL). Informational only — not medical or dietary advice.
+        {usdaEnriched
+          ? 'Data from Open Food Facts (ODbL) + USDA FoodData Central. Informational only — not medical or dietary advice.'
+          : 'Data from Open Food Facts (ODbL). Informational only — not medical or dietary advice.'}
       </p>
     </div>
   )
