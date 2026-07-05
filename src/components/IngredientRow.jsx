@@ -57,7 +57,7 @@ export default function IngredientRow({ item }) {
 
   const hasDetail = !!(item.concern || item.alternatives || (item.sources && item.sources.length > 0))
 
-  // Use the numeric cosIngId for a direct record link; fall back gracefully if absent.
+  // Use the numeric cosIngId for a direct record link; gracefully absent when null.
   const cosingUrl = item.cosing?.cosIngId != null
     ? `${COSING_BASE}${item.cosing.cosIngId}`
     : null
