@@ -3,25 +3,26 @@
  *
  * Two modes:
  *  • Paste  — textarea → instant client-side analysis
- *  • Photo  — camera/gallery photo → Tesseract.js OCR (loaded lazily from CDN)
+ *  • Photo  — camera/gallery → Tesseract.js OCR (bundled via npm, not CDN)
  *            → extracted text shown for review → analysis
+ *
+ * Tesseract is imported as a normal npm dependency so Vite bundles it
+ * correctly and the PWA service worker never tries to intercept an
+ * unpkg/CDN dynamic import (which caused the previous network errors).
  */
 import React, { useState, useRef } from 'react'
 
-const OCR_WORKER_URL = 'https://unpkg.com/tesseract.js@5/dist/worker.min.js'
-const OCR_CORE_URL   = 'https://unpkg.com/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js'
-
 export default function IngredientCapture({ onAnalyse }) {
-  const [tab, setTab]             = useState('paste')   // 'paste' | 'photo'
-  const [pasteText, setPasteText] = useState('')
-  const [ocrText, setOcrText]     = useState('')
-  const [ocrStatus, setOcrStatus] = useState(null)      // null | 'loading' | 'done' | 'error'
-  const [ocrError, setOcrError]   = useState('')
+  const [tab, setTab]                 = useState('paste')
+  const [pasteText, setPasteText]     = useState('')
+  const [ocrText, setOcrText]         = useState('')
+  const [ocrStatus, setOcrStatus]     = useState(null)
+  const [ocrError, setOcrError]       = useState('')
   const [ocrProgress, setOcrProgress] = useState(0)
+  const [ocrStage, setOcrStage]       = useState('')
   const [previewUrl, setPreviewUrl]   = useState(null)
   const fileRef = useRef(null)
 
-  // ── Paste tab ─────────────────────────────────────────────────────────────
   const handlePasteSubmit = (e) => {
     e.preventDefault()
     const text = pasteText.trim()
@@ -29,31 +30,28 @@ export default function IngredientCapture({ onAnalyse }) {
     onAnalyse(text)
   }
 
-  // ── Photo tab ─────────────────────────────────────────────────────────────
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Show preview
-    const url = URL.createObjectURL(file)
-    setPreviewUrl(url)
+    setPreviewUrl(URL.createObjectURL(file))
     setOcrText('')
     setOcrError('')
     setOcrProgress(0)
+    setOcrStage('')
     setOcrStatus('loading')
 
     try {
-      // Lazy-load Tesseract.js from unpkg — only downloaded once, then cached by the browser
-      const { createWorker } = await import(
-        /* @vite-ignore */
-        'https://unpkg.com/tesseract.js@5/dist/tesseract.esm.min.js'
-      )
+      // Bundled npm import — no CDN fetch, no SW conflict
+      const { createWorker } = await import('tesseract.js')
 
       const worker = await createWorker('eng', 1, {
-        workerPath:  OCR_WORKER_URL,
-        corePath:    OCR_CORE_URL,
         logger: (m) => {
+          if (m.status === 'loading tesseract core')       setOcrStage('Loading OCR engine…')
+          if (m.status === 'initializing tesseract')       setOcrStage('Initialising…')
+          if (m.status === 'loading language traineddata') setOcrStage('Loading language data…')
           if (m.status === 'recognizing text') {
+            setOcrStage('Recognising text…')
             setOcrProgress(Math.round(m.progress * 100))
           }
         }
@@ -62,10 +60,9 @@ export default function IngredientCapture({ onAnalyse }) {
       const { data: { text } } = await worker.recognize(file)
       await worker.terminate()
 
-      // Post-process: strip very short tokens, keep ingredient-like lines
       const cleaned = text
         .replace(/\r\n/g, '\n')
-        .replace(/[^a-zA-Z0-9\s,;.()/\-+%\u00C0-\u024F]/g, ' ')
+        .replace(/[^a-zA-Z0-9\s,;.()\/\-+%\u00C0-\u024F]/g, ' ')
         .replace(/\s{2,}/g, ' ')
         .trim()
 
@@ -73,7 +70,7 @@ export default function IngredientCapture({ onAnalyse }) {
       setOcrStatus('done')
     } catch (err) {
       console.error('OCR error:', err)
-      setOcrError('OCR failed — check your internet connection and try again, or switch to Paste mode.')
+      setOcrError('Could not read the image. Make sure the text is in focus and well-lit, then try again. If the problem persists, use Paste mode instead.')
       setOcrStatus('error')
     }
   }
@@ -88,7 +85,6 @@ export default function IngredientCapture({ onAnalyse }) {
   return (
     <div className="flex flex-col gap-4">
 
-      {/* Mode toggle */}
       <div
         role="group"
         aria-label="Ingredient capture method"
@@ -113,7 +109,6 @@ export default function IngredientCapture({ onAnalyse }) {
         ))}
       </div>
 
-      {/* ── Paste tab ──────────────────────────────────────────────────── */}
       {tab === 'paste' && (
         <div className="card p-5">
           <form onSubmit={handlePasteSubmit} className="flex flex-col gap-3" noValidate>
@@ -141,15 +136,13 @@ export default function IngredientCapture({ onAnalyse }) {
         </div>
       )}
 
-      {/* ── Photo tab ──────────────────────────────────────────────────── */}
       {tab === 'photo' && (
         <div className="flex flex-col gap-3">
           <div className="card p-5 flex flex-col gap-3">
             <p className="text-sm text-slate-400">
-              Take a photo of the ingredient list on the packaging. Good lighting and a steady hand help accuracy.
+              Take a photo of the ingredient list. Good lighting and a steady hand help accuracy.
             </p>
 
-            {/* Hidden file input */}
             <input
               ref={fileRef}
               type="file"
@@ -167,11 +160,10 @@ export default function IngredientCapture({ onAnalyse }) {
               className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {ocrStatus === 'loading'
-                ? <><span aria-hidden="true" className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Reading text…</span></>
+                ? <><span aria-hidden="true" className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Processing…</span></>
                 : <><span aria-hidden="true">📷</span><span>{previewUrl ? 'Choose a different photo' : 'Open camera / gallery'}</span></>}
             </button>
 
-            {/* Image preview */}
             {previewUrl && (
               <img
                 src={previewUrl}
@@ -180,37 +172,36 @@ export default function IngredientCapture({ onAnalyse }) {
               />
             )}
 
-            {/* OCR progress bar */}
             {ocrStatus === 'loading' && (
               <div className="flex flex-col gap-1.5">
                 <div className="flex justify-between text-xs text-slate-400">
-                  <span>Recognising text…</span>
-                  <span>{ocrProgress}%</span>
+                  <span>{ocrStage || 'Preparing…'}</span>
+                  <span>{ocrProgress > 0 ? `${ocrProgress}%` : ''}</span>
                 </div>
                 <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-brand-500 rounded-full transition-all duration-300"
-                    style={{ width: `${ocrProgress}%` }}
+                    style={{ width: ocrProgress > 0 ? `${ocrProgress}%` : '100%', opacity: ocrProgress > 0 ? 1 : 0.4 }}
                   />
                 </div>
-                <p className="text-xs text-slate-500">Loading OCR engine on first use (~3 MB) — subsequent scans are instant.</p>
+                {ocrProgress === 0 && (
+                  <p className="text-xs text-slate-500">First scan loads the OCR engine (~4 MB) — cached after that.</p>
+                )}
               </div>
             )}
 
-            {/* OCR error */}
             {ocrStatus === 'error' && (
-              <div role="alert" className="card p-3 border border-red-500/30 bg-red-500/10">
+              <div role="alert" className="p-3 rounded-xl border border-red-500/30 bg-red-500/10">
                 <p className="text-xs text-red-400">{ocrError}</p>
               </div>
             )}
           </div>
 
-          {/* OCR result — editable before submitting */}
           {ocrStatus === 'done' && (
             <div className="card p-5">
               <form onSubmit={handleOcrSubmit} className="flex flex-col gap-3" noValidate>
                 <label htmlFor="ocr-result" className="text-sm text-slate-400">
-                  Review and correct the extracted text before analysing.
+                  Review and correct the extracted text, then tap Analyse.
                 </label>
                 <textarea
                   id="ocr-result"
@@ -235,7 +226,7 @@ export default function IngredientCapture({ onAnalyse }) {
       )}
 
       <p className="text-xs text-slate-600 text-center px-4">
-        Analysis runs entirely on your device — no text is ever uploaded.
+        Analysis runs entirely on your device — nothing is ever uploaded.
       </p>
     </div>
   )
