@@ -8,6 +8,8 @@ const RATING_CONFIG = {
   unknown: { badge: 'bg-slate-700/50 text-slate-400 border border-slate-700', dot: 'bg-slate-500', label: 'Unknown' }
 }
 
+const COSING_BASE = 'https://ec.europa.eu/growth/tools-databases/cosing/details/'
+
 function HazardBar({ score }) {
   const pct    = (score / 10) * 100
   const colour = score >= 7 ? 'bg-red-500' : score >= 4 ? 'bg-yellow-500' : 'bg-emerald-500'
@@ -54,6 +56,11 @@ export default function IngredientRow({ item }) {
   const config = RATING_CONFIG[item.rating] || RATING_CONFIG.unknown
 
   const hasDetail = !!(item.concern || item.alternatives || (item.sources && item.sources.length > 0))
+
+  // Use the numeric cosIngId for a direct record link; fall back gracefully if absent.
+  const cosingUrl = item.cosing?.cosIngId != null
+    ? `${COSING_BASE}${item.cosing.cosIngId}`
+    : null
 
   const handleToggle = () => {
     if (hasDetail) setExpanded(v => !v)
@@ -119,15 +126,15 @@ export default function IngredientRow({ item }) {
               </div>
             )}
             <SourceLinks sources={item.sources} />
-            {item.cosing && (
+            {cosingUrl && (
               <a
-                href={`https://ec.europa.eu/growth/tools-databases/cosing/details/${encodeURIComponent(item.name)}`}
+                href={cosingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
                 className="text-xs text-slate-500 hover:text-brand-400 underline underline-offset-2"
               >
-                🔍 Search this ingredient on EU CosIng ↗
+                🔍 View on EU CosIng ↗
               </a>
             )}
           </div>
