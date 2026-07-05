@@ -57,6 +57,60 @@ function UsdaTooltip() {
   )
 }
 
+const NOVA_INFO = {
+  1: { label: 'Unprocessed or minimally processed', detail: 'Natural foods with no or minimal industrial processing — e.g. fruit, vegetables, plain meat, eggs, milk, dried legumes.' },
+  2: { label: 'Processed culinary ingredients', detail: 'Substances extracted from foods and used in cooking — e.g. oils, butter, flour, sugar, salt. Not usually eaten on their own.' },
+  3: { label: 'Processed foods', detail: 'Foods made by adding salt, sugar, or oil to NOVA 1 foods — e.g. canned vegetables, salted nuts, cured meats, simple cheeses.' },
+  4: { label: 'Ultra-processed foods', detail: 'Industrial formulations with 5+ ingredients, often including additives not found in home cooking — e.g. soft drinks, packaged snacks, instant noodles, reconstituted meat products. Associated with higher risk of obesity, type 2 diabetes, and cardiovascular disease in large prospective studies.' },
+}
+
+function NovaBadge({ group }) {
+  const [open, setOpen] = useState(false)
+  const num = parseInt(group, 10)
+  if (!num || !NOVA_INFO[num]) return null
+
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        aria-label={`NOVA group ${num} — tap for explanation`}
+        onClick={() => setOpen(o => !o)}
+        onBlur={() => setOpen(false)}
+        className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition focus:outline-none focus-visible:ring-1 focus-visible:ring-purple-400"
+      >
+        NOVA {num} ℹ️
+      </button>
+      {open && (
+        <span
+          role="tooltip"
+          className="absolute top-full left-0 mt-2 w-64 rounded-xl bg-slate-800 border border-slate-700 shadow-xl px-3 py-2.5 text-xs text-slate-300 leading-relaxed z-50"
+        >
+          <span className="block font-semibold text-white mb-2">NOVA food processing scale</span>
+          {[1, 2, 3, 4].map(n => (
+            <span
+              key={n}
+              className={`flex gap-2 mb-1.5 last:mb-0 ${
+                n === num ? 'text-purple-300 font-semibold' : 'text-slate-500'
+              }`}
+            >
+              <span className="shrink-0">{n}.</span>
+              <span>{NOVA_INFO[n].label}{n === num ? ` — ${NOVA_INFO[n].detail}` : ''}</span>
+            </span>
+          ))}
+          <a
+            href="https://www.fao.org/nutrition/education/food-dietary-guidelines/background/sustainable-dietary-guidelines/en/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block mt-2 text-brand-400 underline underline-offset-2"
+          >
+            About NOVA (Monteiro et al.)
+          </a>
+        </span>
+      )}
+    </span>
+  )
+}
+
 export default function FoodResult({ product, onBack }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const analysis = analyseFoodProduct(product)
@@ -104,7 +158,7 @@ export default function FoodResult({ product, onBack }) {
               <span className="text-xs px-2 py-1 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">Nutri-Score {analysis.nutriscore}</span>
             )}
             {analysis.novaGroup && (
-              <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">NOVA {analysis.novaGroup}</span>
+              <NovaBadge group={analysis.novaGroup} />
             )}
           </div>
         </div>
