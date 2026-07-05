@@ -54,6 +54,9 @@ export default function IngredientRow({ item }) {
   const config = RATING_CONFIG[item.rating] || RATING_CONFIG.unknown
 
   const hasDetail = !!(item.concern || item.alternatives || (item.sources && item.sources.length > 0))
+  const cosingSearchUrl = item.cosing
+    ? `https://ec.europa.eu/growth/tools-databases/cosing/index.cfm?fuseaction=search.details_v2&id=${encodeURIComponent(item.name)}`
+    : null
 
   const handleToggle = () => {
     if (hasDetail) setExpanded(v => !v)
@@ -119,9 +122,9 @@ export default function IngredientRow({ item }) {
               </div>
             )}
             <SourceLinks sources={item.sources} />
-            {item.cosing && (
+            {cosingSearchUrl && (
               <a
-                href={`https://ec.europa.eu/growth/tools-databases/cosing/details/${encodeURIComponent(item.name)}`}
+                href={cosingSearchUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
