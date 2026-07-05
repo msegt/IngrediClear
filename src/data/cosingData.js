@@ -146,7 +146,7 @@ export const COSING_DATA = {
   'pvp': {"functions": ["FILM FORMING", "HAIR FIXING"], "eu": "safe"},
   'polyvinylpyrrolidone': {"functions": ["FILM FORMING", "HAIR FIXING"], "eu": "safe"},
   'peg-40 hydrogenated castor oil': {"functions": ["EMULSIFYING", "SURFACTANT"], "eu": "safe"},
-  'kojic acid': {"functions": ["SKIN CONDITIONING", "ANTIOXIDANT"], "eu": "restricted", "restriction": "SCCS assessed kojic acid as safe at \u22641% in face creams and body lotions (SCCS/1607/19)."},
+  'kojic acid': {"functions": ["SKIN CONDITIONING", "ANTIOXIDANT"], "eu": "restricted", "restriction": "SCCS assessed kojic acid as safe at ≤1% in face creams and body lotions (SCCS/1607/19)."},
   'alpha-arbutin': {"functions": ["SKIN CONDITIONING"], "eu": "safe"},
   'arbutin': {"functions": ["SKIN CONDITIONING"], "eu": "restricted", "restriction": "Alpha-arbutin max 2% in face; max 0.5% in body. Beta-arbutin not approved for face. Annex III."},
   'azelaic acid': {"functions": ["SKIN CONDITIONING", "ANTIOXIDANT"], "eu": "safe"},
@@ -177,11 +177,11 @@ export const COSING_DATA = {
   'coumarin': {"functions": ["FRAGRANCE"], "eu": "restricted", "restriction": "EU-listed fragrance allergen. Max 0.01% in face; 0.025% in body lotions; 0.05% in rinse-off. Annex III."},
   'fragrance': {"functions": ["FRAGRANCE", "DEODORANT", "MASKING"], "eu": "caution", "restriction": "Generic 'fragrance'/'parfum' declarations may hide multiple undisclosed allergens. EU revision of fragrance labelling ongoing."},
   'parfum': {"functions": ["FRAGRANCE", "DEODORANT", "MASKING"], "eu": "caution", "restriction": "See 'fragrance'."},
-  'ci 77891': {"functions": ["COLORANT"], "eu": "safe", "note": "Titanium dioxide \u2014 white colorant (not UV filter use)."},
-  'ci 77266': {"functions": ["COLORANT"], "eu": "safe", "note": "Black 2 \u2014 carbon black pigment."},
-  'ci 77499': {"functions": ["COLORANT"], "eu": "safe", "note": "Iron oxides \u2014 brown/black pigment."},
-  'ci 77491': {"functions": ["COLORANT"], "eu": "safe", "note": "Iron oxides \u2014 red pigment."},
-  'ci 77492': {"functions": ["COLORANT"], "eu": "safe", "note": "Iron oxides \u2014 yellow pigment."},
+  'ci 77891': {"functions": ["COLORANT"], "eu": "safe", "note": "Titanium dioxide — white colorant (not UV filter use)."},
+  'ci 77266': {"functions": ["COLORANT"], "eu": "safe", "note": "Black 2 — carbon black pigment."},
+  'ci 77499': {"functions": ["COLORANT"], "eu": "safe", "note": "Iron oxides — brown/black pigment."},
+  'ci 77491': {"functions": ["COLORANT"], "eu": "safe", "note": "Iron oxides — red pigment."},
+  'ci 77492': {"functions": ["COLORANT"], "eu": "safe", "note": "Iron oxides — yellow pigment."},
   'mica': {"functions": ["COLORANT", "OPACIFYING", "PEARLESCENT"], "eu": "safe"},
   'hydroquinone': {"functions": ["SKIN CONDITIONING"], "eu": "prohibited", "restriction": "Prohibited in cosmetics sold to consumers in the EU (Annex II, entry 1339). Prescription only. IARC 2A."},
   'formaldehyde': {"functions": ["PRESERVATIVE"], "eu": "prohibited", "restriction": "Prohibited as preservative in nail hardeners above 0.2%. Prohibited in aerosols. IARC Group 1 carcinogen."},
@@ -191,19 +191,19 @@ export const COSING_DATA = {
   'coal tar': {"functions": ["ANTI-DANDRUFF"], "eu": "restricted", "restriction": "Prohibited except in hair dye products at regulated concentrations. IARC Group 1."},
 }
 
+const COSING_KEYS_BY_LENGTH = Object.keys(COSING_DATA).sort((a, b) => b.length - a.length)
+
 /**
  * Look up CosIng data for an INCI ingredient name.
- * Returns the first matching entry (longest key wins via sorted order).
+ * Returns the first matching entry (longest key wins via pre-sorted order).
  * @param {string} name - normalised lowercase ingredient name
  * @returns {object|null}
  */
 export function getCosIngData(name) {
   const lower = name.toLowerCase().trim()
-  // Exact match first
   if (COSING_DATA[lower]) return COSING_DATA[lower]
-  // Substring match — longer keys take priority
-  const keys = Object.keys(COSING_DATA).sort((a, b) => b.length - a.length)
-  return keys.find(k => lower.includes(k)) ? COSING_DATA[keys.find(k => lower.includes(k))] : null
+  const match = COSING_KEYS_BY_LENGTH.find(k => lower.includes(k))
+  return match ? COSING_DATA[match] : null
 }
 
 /** Human-readable labels for CosIng function codes */
