@@ -22,10 +22,6 @@ async function fetchWithTimeout(url, options = {}, ms = 12000) {
   }
 }
 
-/**
- * Returns true when key nutriment fields are absent from the OFF product,
- * meaning USDA enrichment would add meaningful data.
- */
 function needsEnrichment(nutriments = {}) {
   const key_fields = ['energy-kcal_100g', 'sugars_100g', 'salt_100g', 'proteins_100g', 'saturated-fat_100g', 'fiber_100g']
   return key_fields.filter(f => nutriments[f] == null).length >= 3
@@ -35,18 +31,30 @@ export async function fetchFoodProduct(barcode) {
   const url = `${BASE_URL}/${barcode}.json?fields=code,id,product_name,brands,categories,ingredients_text,image_url,image_front_url,allergens,allergens_tags,nutriments,nutriscore_grade,nova_group,labels,quantity`
   const response = await fetchWithTimeout(url)
 
+  // 404 from OFF means the barcode simply isn’t in the database — treat as not-found
+  if (response.status === 404) {
+    const err = new Error('Product not found in Open Food Facts.')
+    err.notFound = true
+    err.barcode = barcode
+    err.dbType = 'food'
+    throw err
+  }
+
   if (!response.ok) throw new Error(`Server error (${response.status}). Try again later.`)
 
   let data
   try { data = await response.json() } catch { throw new Error('Unexpected response from server. Try again.') }
 
   if (data.status === 0 || !data.product || !data.product.product_name) {
-    throw new Error('Food product not found. Make sure you are in Food mode, or try searching by name instead.')
+    const err = new Error('Product not found in Open Food Facts.')
+    err.notFound = true
+    err.barcode = barcode
+    err.dbType = 'food'
+    throw err
   }
 
   const product = data.product
 
-  // Enrich with USDA data when OFF nutriments are sparse
   if (needsEnrichment(product.nutriments)) {
     const usda = await fetchUsdaEnrichment(product.product_name, product.brands)
     if (usda) {
@@ -75,6 +83,6 @@ export async function searchFoodProductsByName(query) {
   try { data = await response.json() } catch { throw new Error('Unexpected response from server. Try again.') }
 
   const products = (data.products || []).filter(p => p.product_name && p.product_name.trim())
-  if (!products.length) throw new Error(`No food products found for "${query}". Try a shorter or different name.`)
+  if (!products.length) throw new Error(`No food products found for “${query}”. Try a shorter or different name.`)
   return products
 }
