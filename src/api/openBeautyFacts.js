@@ -21,7 +21,7 @@ async function fetchWithTimeout(url, options = {}, ms = 12000) {
 }
 
 export async function fetchProduct(barcode) {
-  const url = `${BASE_URL}/${barcode}.json?fields=id,code,product_name,brands,categories,ingredients_text,image_url,image_front_url,labels`
+  const url = `${BASE_URL}/${barcode}.json?fields=id,code,product_name,brands,categories,ingredients_text,image_url,image_front_url,labels,allergens,allergens_tags,periods_after_opening,countries_tags,packaging,ecoscore_grade`
   const response = await fetchWithTimeout(url)
 
   if (!response.ok) throw new Error(`Server error (${response.status}). Try again later.`)
@@ -42,7 +42,7 @@ export async function searchProductsByName(query) {
     action: 'process',
     json: 1,
     page_size: 10,
-    fields: 'id,code,product_name,brands,categories,image_front_url,image_url,labels'
+    fields: 'id,code,product_name,brands,categories,image_front_url,image_url,labels,allergens_tags,periods_after_opening,ecoscore_grade'
   })
 
   const response = await fetchWithTimeout(`${SEARCH_URL}?${params}`)
@@ -52,6 +52,6 @@ export async function searchProductsByName(query) {
   try { data = await response.json() } catch { throw new Error('Unexpected response from server. Try again.') }
 
   const products = (data.products || []).filter(p => p.product_name && p.product_name.trim())
-  if (!products.length) throw new Error(`No cosmetics found for “${query}”. Try a shorter or different name.`)
+  if (!products.length) throw new Error(`No cosmetics found for "${query}". Try a shorter or different name.`)
   return products
 }
