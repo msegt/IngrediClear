@@ -11,6 +11,13 @@
     @apply bg-slate-950 text-slate-100 font-sans antialiased;
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* Visible focus ring for keyboard / switch-access navigation */
+  :focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
 }
 
 @layer components {
@@ -18,23 +25,19 @@
     @apply bg-slate-900 border border-slate-800 rounded-2xl;
   }
   .btn-primary {
-    @apply bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-150 select-none;
+    @apply bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-semibold py-3 px-6 rounded-xl
+           transition-all duration-150 select-none
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950;
   }
   .btn-secondary {
-    @apply bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-medium py-3 px-6 rounded-xl transition-all duration-150 select-none;
+    @apply bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-medium py-3 px-6 rounded-xl
+           transition-all duration-150 select-none
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950;
   }
-  .badge-safe {
-    @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
-  }
-  .badge-caution {
-    @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
-  }
-  .badge-harmful {
-    @apply bg-red-500/20 text-red-400 border border-red-500/30;
-  }
-  .badge-allergen {
-    @apply bg-orange-500/20 text-orange-400 border border-orange-500/30;
-  }
+  .badge-safe    { @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30; }
+  .badge-caution { @apply bg-yellow-500/20  text-yellow-400  border border-yellow-500/30;  }
+  .badge-harmful { @apply bg-red-500/20     text-red-400     border border-red-500/30;     }
+  .badge-allergen{ @apply bg-orange-500/20  text-orange-400  border border-orange-500/30; }
 }
 
 /* Scanner */
@@ -46,8 +49,7 @@
 
 .scan-line {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 0; right: 0;
   height: 2px;
   background: linear-gradient(90deg, transparent, #10b981, transparent);
   box-shadow: 0 0 8px #10b981, 0 0 20px #10b981;
@@ -56,7 +58,7 @@
 
 @keyframes scanLine {
   0%, 100% { top: 10%; }
-  50% { top: 85%; }
+  50%       { top: 85%; }
 }
 
 /* Ingredient rows */
@@ -67,18 +69,25 @@
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
-
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.animate-fade-in  { animation: fadeIn  0.25s ease both; }
+.animate-slide-up { animation: slideUp 0.3s  ease both; }
+
+/* Reduce motion — respect user OS preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .scan-line { animation: none; top: 50%; }
 }
 
-.animate-fade-in  { animation: fadeIn  0.25s ease both; }
-.animate-slide-up { animation: slideUp 0.3s ease both; }
-
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar       { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }

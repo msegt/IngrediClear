@@ -6,45 +6,63 @@ export default function ScanHistory({ history, onSelect, productType = 'cosmetic
 
   React.useEffect(() => { setItems(history) }, [history])
 
-  const handleClear = () => { setItems(clearHistory()) }
+  const handleClear = () => {
+    if (window.confirm('Clear all scan history?')) {
+      setItems(clearHistory())
+    }
+  }
 
-  const fallbackIcon = productType === 'food' ? '🍽️' : '🧴'
-  const emptyLabel = productType === 'food' ? 'food products' : 'cosmetics'
+  const fallbackIcon = productType === 'food' ? '\uD83C\uDF7D\uFE0F' : '\uD83E\uDDF4'
+  const emptyLabel   = productType === 'food' ? 'food products' : 'cosmetics'
 
   if (!items.length) {
     return (
-      <div className="card p-8 flex flex-col items-center text-center gap-3">
-        <span className="text-4xl">🕒</span>
-        <p className="font-semibold text-white">No scan history yet</p>
-        <p className="text-sm text-slate-400">{emptyLabel.charAt(0).toUpperCase() + emptyLabel.slice(1)} you scan will appear here for quick re-access.</p>
+      <div className="card p-8 flex flex-col items-center text-center gap-3" role="status">
+        <span aria-hidden="true" className="text-4xl">\uD83D\uDD52</span>
+        <p className="font-semibold text-white">No history yet</p>
+        <p className="text-sm text-slate-400">
+          {emptyLabel.charAt(0).toUpperCase() + emptyLabel.slice(1)} you scan will appear here for quick re-access.
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <section aria-label="Scan history" className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-white">Recent Scans</h2>
-        <button onClick={handleClear} className="text-xs text-slate-500 hover:text-red-400 transition">Clear all</button>
-      </div>
-      {items.map((item, i) => (
+        <h2 className="font-semibold text-white">Recent scans</h2>
         <button
-          key={i}
-          onClick={() => onSelect(item.barcode)}
-          className="card p-3 flex items-center gap-3 hover:bg-slate-800 transition text-left w-full"
+          onClick={handleClear}
+          aria-label="Clear all scan history"
+          className="text-xs text-slate-500 hover:text-red-400 transition py-1 px-2 rounded-lg"
         >
-          {item.image
-            ? <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-contain bg-slate-800 flex-shrink-0" />
-            : <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">{fallbackIcon}</div>
-          }
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{item.name || 'Unknown Product'}</p>
-            <p className="text-xs text-slate-400 truncate">{item.brand || ''}</p>
-            <p className="text-xs text-slate-600 mt-0.5">{new Date(item.scannedAt).toLocaleDateString()}</p>
-          </div>
-          <span className="text-slate-600 text-sm">→</span>
+          Clear all
         </button>
-      ))}
-    </div>
+      </div>
+      <ul className="flex flex-col gap-2">
+        {items.map((item, i) => (
+          <li key={i}>
+            <button
+              onClick={() => onSelect(item.barcode)}
+              aria-label={`Re-check ${item.name || 'Unknown product'}${item.brand ? ', ' + item.brand : ''}`}
+              className="card w-full p-3 flex items-center gap-3 hover:bg-slate-800 active:bg-slate-700 transition text-left min-h-[64px]"
+            >
+              {item.image
+                ? <img src={item.image} alt="" aria-hidden="true" className="w-12 h-12 rounded-lg object-contain bg-slate-800 flex-shrink-0" />
+                : <div aria-hidden="true" className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">{fallbackIcon}</div>
+              }
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{item.name || 'Unknown Product'}</p>
+                {item.brand && <p className="text-xs text-slate-400 truncate">{item.brand}</p>}
+                <p className="text-xs text-slate-600 mt-0.5">
+                  <time dateTime={item.scannedAt}>{new Date(item.scannedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</time>
+                </p>
+              </div>
+              <span aria-hidden="true" className="text-slate-500 text-lg flex-shrink-0">›</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

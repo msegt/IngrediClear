@@ -8,14 +8,21 @@ const RATING_CONFIG = {
 }
 
 function HazardBar({ score }) {
-  const pct = (score / 10) * 100
+  const pct    = (score / 10) * 100
   const colour = score >= 7 ? 'bg-red-500' : score >= 4 ? 'bg-yellow-500' : 'bg-emerald-500'
   return (
     <div className="flex items-center gap-2 mt-1.5">
-      <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${colour}`} style={{ width: `${pct}%` }} />
+      <div
+        role="progressbar"
+        aria-valuenow={score}
+        aria-valuemin={0}
+        aria-valuemax={10}
+        aria-label={`Hazard score ${score} out of 10`}
+        className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden"
+      >
+        <div className={`h-full rounded-full transition-all ${colour}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-xs text-slate-400 w-8 text-right">EWG {score}/10</span>
+      <span className="text-xs text-slate-400 w-12 text-right">Score {score}/10</span>
     </div>
   )
 }
@@ -23,8 +30,8 @@ function HazardBar({ score }) {
 function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
   return (
-    <div className="mt-1.5 flex flex-col gap-1">
-      <p className="text-xs font-semibold text-slate-500">Evidence</p>
+    <div className="mt-2 flex flex-col gap-1">
+      <p className="text-xs font-semibold text-slate-500">Evidence &amp; sources</p>
       {sources.map((s, i) => (
         <a
           key={i}
@@ -34,7 +41,7 @@ function SourceLinks({ sources }) {
           onClick={e => e.stopPropagation()}
           className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2 leading-relaxed"
         >
-          🔗 {s.label}
+          \uD83D\uDD17 {s.label}
         </a>
       ))}
     </div>
@@ -47,10 +54,15 @@ export default function IngredientRow({ item }) {
 
   return (
     <div
-      className="ingredient-row cursor-pointer select-none"
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      aria-label={`${item.name} — ${config.label}${item.isAllergen ? ', allergen' : ''}. Tap for details.`}
       onClick={() => setExpanded(v => !v)}
+      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setExpanded(v => !v)}
+      className="ingredient-row cursor-pointer select-none"
     >
-      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${config.dot}`} />
+      <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${config.dot}`} />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <span className="text-sm font-medium text-white leading-snug">{item.name}</span>
@@ -59,22 +71,22 @@ export default function IngredientRow({ item }) {
               <span className="text-xs px-2 py-0.5 rounded-full badge-allergen">Allergen</span>
             )}
             <span className={`text-xs px-2 py-0.5 rounded-full ${config.badge}`}>{config.label}</span>
-            <span className="text-slate-600 text-xs ml-0.5">{expanded ? '▲' : '▼'}</span>
+            <span aria-hidden="true" className="text-slate-600 text-xs ml-0.5">{expanded ? '\u25B2' : '\u25BC'}</span>
           </div>
         </div>
 
-        {item.hazardScore && <HazardBar score={item.hazardScore} />}
+        {item.hazardScore != null && <HazardBar score={item.hazardScore} />}
 
         {expanded && (
           <div className="mt-2 flex flex-col gap-2 animate-fade-in">
             {item.concern && (
               <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/60 rounded-lg p-2.5">
-                ⚠️ {item.concern}
+                <span aria-hidden="true">\u26A0\uFE0F </span>{item.concern}
               </p>
             )}
             {item.alternatives && (
               <div className="bg-emerald-900/30 border border-emerald-800/40 rounded-lg p-2.5">
-                <p className="text-xs font-semibold text-emerald-400 mb-1">✅ Safer alternatives</p>
+                <p className="text-xs font-semibold text-emerald-400 mb-1"><span aria-hidden="true">\u2705 </span>Safer alternatives</p>
                 <p className="text-xs text-slate-300 leading-relaxed">{item.alternatives}</p>
               </div>
             )}

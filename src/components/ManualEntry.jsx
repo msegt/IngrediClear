@@ -19,7 +19,6 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
     e.preventDefault()
     const trimmed = value.trim()
     if (!trimmed) return
-
     if (mode === 'barcode') {
       onSubmit(trimmed)
     } else {
@@ -44,13 +43,21 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
   return (
     <div className="flex flex-col gap-4">
 
-      {/* Mode toggle */}
-      <div className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800">
-        {[{ id: 'barcode', label: '📶 Barcode number' }, { id: 'name', label: '🔍 Product name' }].map(m => (
+      {/* Mode toggle — labelled, ARIA */}
+      <div
+        role="group"
+        aria-label="Entry method"
+        className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800"
+      >
+        {[
+          { id: 'barcode', label: 'Barcode number' },
+          { id: 'name',    label: 'Search by name' },
+        ].map(m => (
           <button
             key={m.id}
+            aria-pressed={mode === m.id}
             onClick={() => { setMode(m.id); setValue(''); setResults([]); setSearchError('') }}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-95 ${
               mode === m.id
                 ? 'bg-brand-500 text-white shadow-md shadow-brand-500/25'
                 : 'text-slate-400 hover:text-slate-200'
@@ -64,84 +71,97 @@ export default function ManualEntry({ onSubmit, productType = 'cosmetics' }) {
       {/* Input card */}
       <div className="card p-5">
         {mode === 'barcode' ? (
-          <>
-            <p className="text-sm text-slate-400 mb-3">Type the number printed beneath the barcode stripes.</p>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={value}
-                onChange={e => setValue(e.target.value)}
-                placeholder={isFood ? 'e.g. 3017620422003' : 'e.g. 3600523462452'}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition text-lg tracking-widest"
-              />
-              <button type="submit" disabled={value.trim().length < 6} className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
-                Check →
-              </button>
-            </form>
-          </>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
+            <label htmlFor="barcode-input" className="text-sm text-slate-400">
+              Type the number printed beneath the barcode stripes.
+            </label>
+            <input
+              id="barcode-input"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={value}
+              onChange={e => setValue(e.target.value)}
+              placeholder={isFood ? 'e.g. 3017620422003' : 'e.g. 3600523462452'}
+              aria-label="Barcode number"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/50 transition text-lg tracking-widest"
+            />
+            <button
+              type="submit"
+              disabled={value.trim().length < 6}
+              aria-disabled={value.trim().length < 6}
+              className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Check product
+            </button>
+          </form>
         ) : (
-          <>
-            <p className="text-sm text-slate-400 mb-3">{nameHint}</p>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-              <input
-                type="search"
-                value={value}
-                onChange={e => { setValue(e.target.value); setResults([]); setSearchError('') }}
-                placeholder={namePlaceholder}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
-                autoComplete="off"
-              />
-              <button
-                type="submit"
-                disabled={value.trim().length < 2 || searching}
-                className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {searching
-                  ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Searching…</>
-                  : 'Search →'}
-              </button>
-            </form>
-          </>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
+            <label htmlFor="name-input" className="text-sm text-slate-400">
+              {nameHint}
+            </label>
+            <input
+              id="name-input"
+              type="search"
+              value={value}
+              onChange={e => { setValue(e.target.value); setResults([]); setSearchError('') }}
+              placeholder={namePlaceholder}
+              aria-label="Product name"
+              autoComplete="off"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/50 transition"
+            />
+            <button
+              type="submit"
+              disabled={value.trim().length < 2 || searching}
+              aria-disabled={value.trim().length < 2 || searching}
+              className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {searching
+                ? <><span aria-hidden="true" className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Searching…</span></>
+                : 'Search products'}
+            </button>
+          </form>
         )}
       </div>
 
       {/* Search error */}
       {searchError && (
-        <div className="card p-4 border border-red-500/30 bg-red-500/10">
+        <div role="alert" className="card p-4 border border-red-500/30 bg-red-500/10">
           <p className="text-sm text-red-400">{searchError}</p>
         </div>
       )}
 
       {/* Search results */}
       {results.length > 0 && (
-        <div className="card">
+        <section aria-label="Search results" className="card">
           <p className="text-xs font-semibold text-slate-400 px-4 pt-4 pb-2">
-            {results.length} result{results.length !== 1 ? 's' : ''} found — tap to check
+            {results.length} result{results.length !== 1 ? 's' : ''} — tap a product to check its ingredients
           </p>
-          <div className="flex flex-col pb-2">
+          <ul className="flex flex-col pb-2">
             {results.map((product, i) => (
-              <button
-                key={product.code || i}
-                onClick={() => handleSelectResult(product)}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 transition text-left border-t border-slate-800 first:border-0"
-              >
-                {(product.image_front_url || product.image_url)
-                  ? <img src={product.image_front_url || product.image_url} alt="" className="w-12 h-12 rounded-lg object-contain bg-slate-800 flex-shrink-0" />
-                  : <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">
-                      {isFood ? '🍽️' : '🧴'}
-                    </div>
-                }
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{product.product_name}</p>
-                  {product.brands && <p className="text-xs text-slate-400 truncate">{product.brands}</p>}
-                  {product.categories && <p className="text-xs text-slate-600 truncate">{product.categories.split(',')[0]}</p>}
-                </div>
-                <span className="text-slate-600 flex-shrink-0">→</span>
-              </button>
+              <li key={product.code || i}>
+                <button
+                  onClick={() => handleSelectResult(product)}
+                  aria-label={`Check ${product.product_name || 'Unknown product'}${product.brands ? ' by ' + product.brands : ''}`}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 active:bg-slate-700 transition text-left border-t border-slate-800 first:border-0 min-h-[64px]"
+                >
+                  {(product.image_front_url || product.image_url)
+                    ? <img src={product.image_front_url || product.image_url} alt="" aria-hidden="true" className="w-12 h-12 rounded-lg object-contain bg-slate-800 flex-shrink-0" />
+                    : <div aria-hidden="true" className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-xl flex-shrink-0">
+                        {isFood ? '\uD83C\uDF7D\uFE0F' : '\uD83E\uDDF4'}
+                      </div>
+                  }
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{product.product_name}</p>
+                    {product.brands && <p className="text-xs text-slate-400 truncate">{product.brands}</p>}
+                    {product.categories && <p className="text-xs text-slate-500 truncate">{product.categories.split(',')[0]}</p>}
+                  </div>
+                  <span aria-hidden="true" className="text-slate-500 flex-shrink-0 text-lg">›</span>
+                </button>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
     </div>
   )
