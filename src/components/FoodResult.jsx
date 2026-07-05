@@ -205,6 +205,7 @@ export default function FoodResult({ product, onBack }) {
         score={analysis.healthScore}
         protein={analysis.nutrients.protein}
         scoreReasons={analysis.scoreReasons}
+        dataQuality={analysis.dataQuality}
       />
 
       {analysis.allergens.length > 0 && (
