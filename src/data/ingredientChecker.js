@@ -1,6 +1,6 @@
 // Ingredient safety database compiled from:
 // - EU CosIng database (open access): https://ec.europa.eu/growth/tools-databases/cosing/
-// - EU Cosmetics Regulation 1223/2009: https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401
+// - EU Cosmetics Regulation 1223/2009: https://eur-lex.europa.eu/eli/reg/2009/1223/oj
 // - IARC Monographs: https://monographs.iarc.who.int/
 // - EU Scientific Committee on Consumer Safety (SCCS): https://health.ec.europa.eu/scientific-committees/scientific-committee-consumer-safety-sccs_en
 // - EWG Skin Deep (indicative hazard scores): https://www.ewg.org/skindeep/
@@ -13,7 +13,7 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Look for products preserved with sodium benzoate, potassium sorbate, or vitamin E (tocopherol).',
     sources: [
       { label: 'IARC Monograph Vol. 100F — Formaldehyde', url: 'https://monographs.iarc.who.int/iarc-monographs-on-the-evaluation-of-carcinogenic-risks-to-humans-100f/' },
-      { label: 'EU Cosmetics Regulation — Annex II (prohibited substances)', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401' }
+      { label: 'EU Cosmetics Regulation 1223/2009 — Annex II (prohibited substances)', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' }
     ]
   },
   {
@@ -23,7 +23,7 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Phenoxyethanol, sodium benzoate, potassium sorbate, or naturally preserved formulas.',
     sources: [
       { label: 'SCCS Opinion on parabens (2013)', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_132.pdf' },
-      { label: 'EU Cosmetics Regulation — Annex V (restricted preservatives)', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401' }
+      { label: 'EU Cosmetics Regulation 1223/2009 — Annex V (restricted preservatives)', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' }
     ]
   },
   {
@@ -42,7 +42,7 @@ const HARMFUL_INGREDIENTS = [
     hazardScore: 8,
     alternatives: 'Choose phthalate-free nail polishes; look for "fragrance-free" or products that disclose all fragrance ingredients.',
     sources: [
-      { label: 'EU Cosmetics Regulation — Annex II (DBP, DEHP prohibited)', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401' },
+      { label: 'EU Cosmetics Regulation 1223/2009 — Annex II (DBP, DEHP prohibited)', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' },
       { label: 'ECHA — Phthalates as substances of very high concern', url: 'https://echa.europa.eu/substances-of-very-high-concern-identification/-/dislist/details/0b0236e180d451e1' }
     ]
   },
@@ -63,7 +63,7 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Mineral sunscreens with zinc oxide or titanium dioxide remain on the skin surface and do not penetrate.',
     sources: [
       { label: 'SCCS Opinion on benzophenone-3 (2021)', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_249.pdf' },
-      { label: 'EU Cosmetics Regulation — Annex VI (UV filters)', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401' }
+      { label: 'EU Cosmetics Regulation 1223/2009 — Annex VI (UV filters)', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' }
     ]
   },
   {
@@ -73,7 +73,7 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Kojic acid, niacinamide, alpha-arbutin, or azelaic acid for skin brightening — all with better safety profiles.',
     sources: [
       { label: 'IARC — Hydroquinone classification (Group 3)', url: 'https://monographs.iarc.who.int/list-of-classifications/' },
-      { label: 'EU Cosmetics Regulation — Annex II (hydroquinone prohibited)', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401' }
+      { label: 'EU Cosmetics Regulation 1223/2009 — Annex II (hydroquinone prohibited)', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' }
     ]
   },
   {
@@ -83,7 +83,7 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Zinc pyrithione or selenium sulfide shampoos for dandruff; ammonia-free synthetic hair dyes without coal tar derivatives.',
     sources: [
       { label: 'IARC Monograph — Coal Tar (Group 1)', url: 'https://monographs.iarc.who.int/list-of-classifications/' },
-      { label: 'EU Cosmetics Regulation — Annex II', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401' }
+      { label: 'EU Cosmetics Regulation 1223/2009 — Annex II', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' }
     ]
   },
   {
@@ -123,7 +123,7 @@ const HARMFUL_INGREDIENTS = [
     alternatives: 'Vitamin E (tocopherol) or rosemary extract as natural antioxidant preservatives.',
     sources: [
       { label: 'IARC — BHA classification (Group 2B)', url: 'https://monographs.iarc.who.int/list-of-classifications/' },
-      { label: 'EU Cosmetics Regulation — Annex III (restricted)', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401' }
+      { label: 'EU Cosmetics Regulation 1223/2009 — Annex III (restricted)', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' }
     ]
   },
   {
@@ -170,7 +170,7 @@ const ALLERGEN_INGREDIENTS = [
 ]
 
 const ALLERGEN_SOURCES = [
-  { label: 'EU Cosmetics Regulation — Annex III fragrance allergens', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02009R1223-20230401' },
+  { label: 'EU Cosmetics Regulation 1223/2009 — Annex III fragrance allergens', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' },
   { label: 'SCCS — Opinion on fragrance allergens in cosmetics', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_102.pdf' }
 ]
 
