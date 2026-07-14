@@ -146,6 +146,9 @@ function round(value, digits = 1) {
   return Number.isFinite(n) ? Number(n.toFixed(digits)) : null
 }
 
+// Valid Nutri-Score grades per Santé publique France specification
+const VALID_NUTRISCORE = { A: 1, B: 1, C: 1, D: 1, E: 1 }
+
 export function analyseFoodProduct(product) {
   const nutriments = product.nutriments || {}
   const salt         = round(nutriments.salt_100g)
@@ -191,34 +194,48 @@ export function analyseFoodProduct(product) {
     if (ingredientsText.includes(item.match)) additiveFlags.push(item)
   })
 
-  // ── New Ivy-inspired checks ─────────────────────────────────────────────
-  const seedOilFlag    = detectSeedOils(ingredientsText, product.ingredients_tags || [])
-  const pesticideFlag  = detectPesticideRisk(product.categories_tags || [])
+  // ── Ivy-inspired checks ───────────────────────────────────────────────────
+  const seedOilFlag     = detectSeedOils(ingredientsText, product.ingredients_tags || [])
+  const pesticideFlag   = detectPesticideRisk(product.categories_tags || [])
   const heavyMetalFlags = detectHeavyMetalRisks(product.categories_tags || [], ingredientsText)
-  // Eco-Score (ecoscore_grade) and packaging_tags are passed directly from
-  // the product object to EcoScoreBadge and PackagingFlags in FoodResult.jsx
-  // ────────────────────────────────────────────────────────────────────────
+  // Eco-Score and packaging_tags are consumed directly in FoodResult.jsx
+  // ─────────────────────────────────────────────────────────────────────────────
 
   const nutriscore = (product.nutriscore_grade || '').toUpperCase()
+  // Track whether we actually used the estimation path (fixes healthScoreEstimated
+  // being wrong when nutriscore_grade is present but invalid, e.g. "unknown").
+  let healthScoreEstimated = false
   const scoreReasons = []
   let healthScore = null
 
-  if (nutriscore && { A: 1, B: 1, C: 1, D: 1, E: 1 }[nutriscore]) {
+  if (nutriscore && VALID_NUTRISCORE[nutriscore]) {
+    // ── Nutri-Score available: use authoritative mapping ──────────────────────
     healthScore = { A: 92, B: 75, C: 55, D: 35, E: 15 }[nutriscore]
     scoreReasons.push({
       impact: 'neutral',
       text: `Nutri-Score ${nutriscore} — a science-based front-of-pack rating developed by Santé publique France, widely adopted across the EU. This is the primary basis for the score.`,
       delta: null,
     })
+
   } else if (dataQuality === 'none') {
+    // ── No nutrients at all: cannot estimate ──────────────────────────────
     healthScore = null
     scoreReasons.push({
       impact: 'neutral',
       text: 'No nutritional data found in Open Food Facts for this product. A health score cannot be calculated without at least some nutrient values.',
       delta: null,
     })
+
   } else {
-    healthScore = 55
+    // ── No valid Nutri-Score but some nutrient data: estimate ───────────────
+    //
+    // Start at 100; deduct only for confirmed negatives.
+    // Missing nutrients are neither penalised nor rewarded.
+    // The final clamp is Math.max(5, healthScore) — no upper cap,
+    // so a food with zero negative signals correctly returns 100.
+    healthScoreEstimated = true
+    healthScore = 100
+
     const missingNutrients = []
     if (salt === null)         missingNutrients.push('salt')
     if (sugar === null)        missingNutrients.push('sugar')
@@ -228,63 +245,69 @@ export function analyseFoodProduct(product) {
 
     scoreReasons.push({
       impact: 'neutral',
-      text: `No Nutri-Score available — score estimated from ${availableNutrients.length} of 5 tracked nutrients using UK FSA traffic-light thresholds. Starting point: 55/100.`,
+      text: `No Nutri-Score available — score estimated from ${availableNutrients.length} of 5 tracked nutrients using UK FSA traffic-light thresholds. Starts at 100; deductions applied only for confirmed negatives.`,
       delta: null,
     })
 
     if (missingNutrients.length > 0) {
       scoreReasons.push({
         impact: 'neutral',
-        text: `Missing data for: ${missingNutrients.join(', ')}. These could not be factored into the score.`,
+        text: `Missing data for: ${missingNutrients.join(', ')}. These nutrients were not penalised or rewarded — only known values are factored in.`,
         delta: null,
       })
     }
 
+    // Sugar
     if (flags.some(f => f.level === 'high' && f.label.includes('sugar'))) {
-      healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High sugar (${sugar}g/100g) — above UK FSA "high" threshold of 22.5g/100g.`, delta: -20 })
+      healthScore -= 25
+      scoreReasons.push({ impact: 'negative', text: `High sugar (${sugar}g/100g) — above UK FSA "high" threshold of 22.5g/100g.`, delta: -25 })
     } else if (flags.some(f => f.level === 'moderate' && f.label.includes('sugar'))) {
-      healthScore -= 5
-      scoreReasons.push({ impact: 'negative', text: `Moderate sugar (${sugar}g/100g) — UK FSA medium band (5–22.5g/100g).`, delta: -5 })
+      healthScore -= 10
+      scoreReasons.push({ impact: 'negative', text: `Moderate sugar (${sugar}g/100g) — UK FSA medium band (5–22.5g/100g).`, delta: -10 })
     } else if (sugar !== null) {
       scoreReasons.push({ impact: 'positive', text: `Low sugar (${sugar}g/100g) — below UK FSA "low" threshold of 5g/100g.`, delta: null })
     }
 
+    // Salt
     if (flags.some(f => f.level === 'high' && f.label.includes('salt'))) {
-      healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High salt (${salt}g/100g) — above UK FSA "high" threshold of 1.5g/100g.`, delta: -20 })
+      healthScore -= 25
+      scoreReasons.push({ impact: 'negative', text: `High salt (${salt}g/100g) — above UK FSA "high" threshold of 1.5g/100g.`, delta: -25 })
     } else if (flags.some(f => f.level === 'moderate' && f.label.includes('salt'))) {
-      healthScore -= 5
-      scoreReasons.push({ impact: 'negative', text: `Moderate salt (${salt}g/100g) — UK FSA medium band (0.3–1.5g/100g).`, delta: -5 })
+      healthScore -= 10
+      scoreReasons.push({ impact: 'negative', text: `Moderate salt (${salt}g/100g) — UK FSA medium band (0.3–1.5g/100g).`, delta: -10 })
     } else if (salt !== null) {
       scoreReasons.push({ impact: 'positive', text: `Low salt (${salt}g/100g) — below UK FSA "low" threshold of 0.3g/100g.`, delta: null })
     }
 
+    // Saturated fat
     if (flags.some(f => f.level === 'high' && f.label.includes('saturated'))) {
-      healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High saturated fat (${saturatedFat}g/100g) — above UK FSA "high" threshold of 5g/100g.`, delta: -20 })
+      healthScore -= 25
+      scoreReasons.push({ impact: 'negative', text: `High saturated fat (${saturatedFat}g/100g) — above UK FSA "high" threshold of 5g/100g.`, delta: -25 })
     } else if (flags.some(f => f.level === 'moderate' && f.label.includes('saturated'))) {
-      healthScore -= 5
-      scoreReasons.push({ impact: 'negative', text: `Moderate saturated fat (${saturatedFat}g/100g) — UK FSA medium band (1.5–5g/100g).`, delta: -5 })
+      healthScore -= 10
+      scoreReasons.push({ impact: 'negative', text: `Moderate saturated fat (${saturatedFat}g/100g) — UK FSA medium band (1.5–5g/100g).`, delta: -10 })
     } else if (saturatedFat !== null) {
       scoreReasons.push({ impact: 'positive', text: `Low saturated fat (${saturatedFat}g/100g) — below UK FSA "low" threshold of 1.5g/100g.`, delta: null })
     }
 
+    // Protein bonus — use Math.max so a bonus never decreases the score
     if (flags.some(f => f.level === 'good' && f.label.includes('protein'))) {
-      healthScore += 10
-      scoreReasons.push({ impact: 'positive', text: `High protein (${protein}g/100g) — above "good source" threshold of 10g/100g (EU Reg. 1924/2006).`, delta: +10 })
+      healthScore = Math.max(healthScore, healthScore + 5)
+      scoreReasons.push({ impact: 'positive', text: `High protein (${protein}g/100g) — above "good source" threshold of 10g/100g (EU Reg. 1924/2006).`, delta: +5 })
     } else if (protein !== null) {
       scoreReasons.push({ impact: 'neutral', text: `Protein: ${protein}g/100g — below "good source" threshold (10g/100g). No adjustment.`, delta: null })
     }
 
+    // Fibre bonus — same guard
     if (flags.some(f => f.level === 'good' && f.label.includes('fibre'))) {
-      healthScore += 10
-      scoreReasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g) — meets EU "source of fibre" criterion (≥3g/100g).`, delta: +10 })
+      healthScore = Math.max(healthScore, healthScore + 5)
+      scoreReasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g) — meets EU "source of fibre" criterion (≥3g/100g).`, delta: +5 })
     } else if (fiber !== null) {
       scoreReasons.push({ impact: 'neutral', text: `Fibre: ${fiber}g/100g — below EU "source of fibre" threshold (3g/100g). No adjustment.`, delta: null })
     }
 
-    healthScore = Math.max(5, Math.min(95, healthScore))
+    // Only enforce a floor; no upper cap so 100 is reachable for clean products
+    healthScore = Math.max(5, healthScore)
   }
 
   return {
@@ -300,5 +323,6 @@ export function analyseFoodProduct(product) {
     nutriscore,
     novaGroup: product.nova_group || null,
     dataQuality,
+    healthScoreEstimated,
   }
 }

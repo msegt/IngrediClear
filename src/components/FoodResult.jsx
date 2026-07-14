@@ -236,6 +236,21 @@ export default function FoodResult({ product, onBack }) {
         </div>
       </div>
 
+      {/* Estimated score disclaimer badge */}
+      {analysis.healthScoreEstimated && analysis.healthScore !== null && (
+        <div
+          role="note"
+          aria-label="Health score is estimated, not from Nutri-Score"
+          className="flex items-center gap-2 rounded-xl px-3 py-2 bg-amber-500/10 border border-amber-500/25 text-xs text-amber-300"
+        >
+          <span aria-hidden="true">⚠️</span>
+          <span>
+            <strong>Estimated score</strong> — no Nutri-Score available for this product.
+            Score is calculated from available nutrient data only and may not fully reflect overall nutritional quality.
+          </span>
+        </div>
+      )}
+
       <NutritionGauge
         score={analysis.healthScore}
         protein={analysis.nutrients.protein}
@@ -290,7 +305,7 @@ export default function FoodResult({ product, onBack }) {
         </div>
       )}
 
-      {/* ── Seed oils ───────────────────────────────────────────────── */}
+      {/* ── Seed oils ────────────────────────────────────────────────────────────── */}
       {analysis.seedOilFlag && (
         <div className="card p-4 border border-yellow-500/20 bg-yellow-500/5">
           <p className="text-sm font-semibold text-white mb-1">{analysis.seedOilFlag.label}</p>
@@ -306,7 +321,7 @@ export default function FoodResult({ product, onBack }) {
         </div>
       )}
 
-      {/* ── Pesticide risk ──────────────────────────────────────────── */}
+      {/* ── Pesticide risk ────────────────────────────────────────────────────────── */}
       {analysis.pesticideFlag && (
         <div className="card p-4 border border-lime-500/20 bg-lime-500/5">
           <p className="text-sm font-semibold text-white mb-1">{analysis.pesticideFlag.label}</p>
@@ -315,7 +330,7 @@ export default function FoodResult({ product, onBack }) {
         </div>
       )}
 
-      {/* ── Heavy metals ────────────────────────────────────────────── */}
+      {/* ── Heavy metals ────────────────────────────────────────────────────────── */}
       {analysis.heavyMetalFlags && analysis.heavyMetalFlags.length > 0 && (
         <div className="card p-4">
           <p className="text-sm font-semibold text-white mb-2">⚗️ Heavy metal risk</p>
@@ -331,7 +346,7 @@ export default function FoodResult({ product, onBack }) {
         </div>
       )}
 
-      {/* ── Packaging flags ─────────────────────────────────────────── */}
+      {/* ── Packaging flags ───────────────────────────────────────────────────────── */}
       <PackagingFlags packagingTags={product.packaging_tags || []} />
 
       <div className="card p-4">
