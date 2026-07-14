@@ -3,6 +3,9 @@ import { analyseFoodProduct } from '../data/foodChecker.js'
 import NutritionGauge from './NutritionGauge.jsx'
 import ImageLightbox from './ImageLightbox.jsx'
 import NutriScoreBadge from './NutriScoreBadge.jsx'
+import EcoScoreBadge from './EcoScoreBadge.jsx'
+import PackagingFlags from './PackagingFlags.jsx'
+import { addToGroceryList, removeFromGroceryList, isInGroceryList } from '../data/groceryList.js'
 
 function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
@@ -150,9 +153,28 @@ function NovaBadge({ group }) {
 
 export default function FoodResult({ product, onBack }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [inGroceryList, setInGroceryList] = useState(() => isInGroceryList(product.code || product.id))
   const analysis = analyseFoodProduct(product)
   const imageUrl = product.image_front_url || product.image_url
   const usdaEnriched = !!product._usdaEnriched
+
+  const handleGroceryToggle = () => {
+    const barcode = product.code || product.id
+    if (inGroceryList) {
+      removeFromGroceryList(barcode)
+      setInGroceryList(false)
+    } else {
+      addToGroceryList({
+        barcode,
+        name: product.product_name || 'Unknown',
+        brand: product.brands || '',
+        image: imageUrl || '',
+        nutriscore: analysis.nutriscore || '',
+        novaGroup: analysis.novaGroup || null,
+      })
+      setInGroceryList(true)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4 pb-8">
@@ -164,9 +186,21 @@ export default function FoodResult({ product, onBack }) {
         />
       )}
 
-      <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium">
-        ← Scan another
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium">
+          ← Scan another
+        </button>
+        <button
+          onClick={handleGroceryToggle}
+          aria-label={inGroceryList ? 'Remove from grocery list' : 'Add to grocery list'}
+          title={inGroceryList ? 'Remove from grocery list' : 'Add to grocery list'}
+          className={`text-xl transition ${
+            inGroceryList ? 'text-emerald-400 hover:text-red-400' : 'text-slate-500 hover:text-emerald-400'
+          }`}
+        >
+          {inGroceryList ? '🛒✓' : '🛒'}
+        </button>
+      </div>
 
       <div className="card p-4 flex gap-4 items-start">
         {imageUrl && (
@@ -197,6 +231,7 @@ export default function FoodResult({ product, onBack }) {
             {analysis.novaGroup && (
               <NovaBadge group={analysis.novaGroup} />
             )}
+            <EcoScoreBadge grade={product.ecoscore_grade} />
           </div>
         </div>
       </div>
@@ -254,6 +289,50 @@ export default function FoodResult({ product, onBack }) {
           </div>
         </div>
       )}
+
+      {/* ── Seed oils ───────────────────────────────────────────────── */}
+      {analysis.seedOilFlag && (
+        <div className="card p-4 border border-yellow-500/20 bg-yellow-500/5">
+          <p className="text-sm font-semibold text-white mb-1">{analysis.seedOilFlag.label}</p>
+          <p className="text-xs text-slate-400">{analysis.seedOilFlag.detail}</p>
+          {analysis.seedOilFlag.detected && analysis.seedOilFlag.detected.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {analysis.seedOilFlag.detected.map((oil, i) => (
+                <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-300 border border-yellow-500/25">{oil}</span>
+              ))}
+            </div>
+          )}
+          <SourceLinks sources={analysis.seedOilFlag.sources} />
+        </div>
+      )}
+
+      {/* ── Pesticide risk ──────────────────────────────────────────── */}
+      {analysis.pesticideFlag && (
+        <div className="card p-4 border border-lime-500/20 bg-lime-500/5">
+          <p className="text-sm font-semibold text-white mb-1">{analysis.pesticideFlag.label}</p>
+          <p className="text-xs text-slate-400">{analysis.pesticideFlag.detail}</p>
+          <SourceLinks sources={analysis.pesticideFlag.sources} />
+        </div>
+      )}
+
+      {/* ── Heavy metals ────────────────────────────────────────────── */}
+      {analysis.heavyMetalFlags && analysis.heavyMetalFlags.length > 0 && (
+        <div className="card p-4">
+          <p className="text-sm font-semibold text-white mb-2">⚗️ Heavy metal risk</p>
+          <div className="flex flex-col gap-3">
+            {analysis.heavyMetalFlags.map((item, i) => (
+              <div key={i} className="rounded-xl p-3 border border-slate-600 bg-slate-800/50">
+                <p className="text-sm font-semibold text-white">{item.label}</p>
+                <p className="text-xs text-slate-400 mt-1">{item.detail}</p>
+                <SourceLinks sources={item.sources} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Packaging flags ─────────────────────────────────────────── */}
+      <PackagingFlags packagingTags={product.packaging_tags || []} />
 
       <div className="card p-4">
         <div className="flex items-center mb-3">

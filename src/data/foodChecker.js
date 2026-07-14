@@ -191,12 +191,13 @@ export function analyseFoodProduct(product) {
     if (ingredientsText.includes(item.match)) additiveFlags.push(item)
   })
 
-  // ── New Ivy-inspired checks ───────────────────────────────────────────────
-  const seedOilFlag = detectSeedOils(ingredientsText, product.ingredients_tags || [])
-  const pesticideFlag = detectPesticideRisk(product.categories_tags || [])
+  // ── New Ivy-inspired checks ─────────────────────────────────────────────
+  const seedOilFlag    = detectSeedOils(ingredientsText, product.ingredients_tags || [])
+  const pesticideFlag  = detectPesticideRisk(product.categories_tags || [])
   const heavyMetalFlags = detectHeavyMetalRisks(product.categories_tags || [], ingredientsText)
-  // Eco-Score and packaging are read directly from product fields in FoodResult
-  // ─────────────────────────────────────────────────────────────────────────
+  // Eco-Score (ecoscore_grade) and packaging_tags are passed directly from
+  // the product object to EcoScoreBadge and PackagingFlags in FoodResult.jsx
+  // ────────────────────────────────────────────────────────────────────────
 
   const nutriscore = (product.nutriscore_grade || '').toUpperCase()
   const scoreReasons = []
@@ -292,3 +293,12 @@ export function analyseFoodProduct(product) {
     additiveFlags,
     seedOilFlag,
     pesticideFlag,
+    heavyMetalFlags,
+    nutrients: { salt, sugar, protein, saturatedFat, fiber, energyKcal },
+    healthScore,
+    scoreReasons,
+    nutriscore,
+    novaGroup: product.nova_group || null,
+    dataQuality,
+  }
+}
