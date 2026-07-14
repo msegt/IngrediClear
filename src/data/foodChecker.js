@@ -5,6 +5,10 @@
 // - IARC Monographs: https://monographs.iarc.who.int/
 // - WHO dietary guidelines: https://www.who.int/news-room/fact-sheets/detail/healthy-diet
 
+import { detectSeedOils } from './seedOils.js'
+import { detectPesticideRisk } from './pesticideRisk.js'
+import { detectHeavyMetalRisks } from './heavyMetalsFood.js'
+
 const COMMON_ALLERGENS = [
   { tag: 'en:gluten',                          label: 'Gluten' },
   { tag: 'en:milk',                            label: 'Milk' },
@@ -53,7 +57,7 @@ const ADDITIVE_CHECKS = [
   {
     match: 'aspartame',
     label: 'Aspartame (E951)',
-    detail: 'Approved by EFSA and FDA within established ADI limits (40mg/kg/day). In 2023, IARC classified aspartame as “possibly carcinogenic” (Group 2B) at very high intakes, but EFSA and WHO concluded current ADI remains safe for the general population.',
+    detail: 'Approved by EFSA and FDA within established ADI limits (40mg/kg/day). In 2023, IARC classified aspartame as "possibly carcinogenic" (Group 2B) at very high intakes, but EFSA and WHO concluded current ADI remains safe for the general population.',
     sources: [
       { label: 'IARC/WHO/FAO — Aspartame hazard and risk assessment (2023)', url: 'https://www.iarc.who.int/news-events/iarc-monographs-evaluation-of-the-carcinogenicity-of-aspartame/' },
       { label: 'EFSA — Re-evaluation of aspartame (2013)', url: 'https://efsa.onlinelibrary.wiley.com/doi/10.2903/j.efsa.2013.3496' }
@@ -71,7 +75,7 @@ const ADDITIVE_CHECKS = [
   {
     match: 'monosodium glutamate',
     label: 'MSG (E621)',
-    detail: 'Approved flavour enhancer considered safe by EFSA and FDA. Rigorous double-blind studies have not confirmed “MSG sensitivity” as a reproducible syndrome. Naturally present in tomatoes, parmesan, and soy sauce.',
+    detail: 'Approved flavour enhancer considered safe by EFSA and FDA. Rigorous double-blind studies have not confirmed "MSG sensitivity" as a reproducible syndrome. Naturally present in tomatoes, parmesan, and soy sauce.',
     sources: [
       { label: 'EFSA — Re-evaluation of glutamic acid and glutamates (2017)', url: 'https://efsa.onlinelibrary.wiley.com/doi/10.2903/j.efsa.2017.4910' },
       { label: 'Geha et al. — Multicenter double-blind trial on MSG sensitivity (2000)', url: 'https://doi.org/10.1093/jn/130.4.1058S' }
@@ -115,7 +119,7 @@ const ADDITIVE_CHECKS = [
   {
     match: 'red 40',
     label: 'Red 40 / Allura Red (E129)',
-    detail: 'Approved synthetic food dye. One of the “Southampton Six” — a combination of artificial colours linked to increased hyperactivity in children (McCann et al., Lancet 2007). EU requires the warning: “may have an adverse effect on activity and attention in children”.',
+    detail: 'Approved synthetic food dye. One of the "Southampton Six" — a combination of artificial colours linked to increased hyperactivity in children (McCann et al., Lancet 2007). EU requires the warning: "may have an adverse effect on activity and attention in children".',
     sources: [
       { label: 'McCann et al. — Food additives and hyperactivity (Lancet, 2007)', url: 'https://doi.org/10.1016/S0140-6736(07)61306-3' },
       { label: 'EFSA — Opinion on Southampton colours (2008)', url: 'https://efsa.onlinelibrary.wiley.com/doi/10.2903/j.efsa.2008.660' }
@@ -124,7 +128,7 @@ const ADDITIVE_CHECKS = [
   {
     match: 'tartrazine',
     label: 'Tartrazine (E102)',
-    detail: 'Approved yellow food dye. One of the “Southampton Six” — linked to increased hyperactivity in children (McCann et al., Lancet 2007). EU requires the warning: “may have an adverse effect on activity and attention in children”.',
+    detail: 'Approved yellow food dye. One of the "Southampton Six" — linked to increased hyperactivity in children (McCann et al., Lancet 2007). EU requires the warning: "may have an adverse effect on activity and attention in children".',
     sources: [
       { label: 'McCann et al. — Food additives and hyperactivity (Lancet, 2007)', url: 'https://doi.org/10.1016/S0140-6736(07)61306-3' },
       { label: 'EFSA — Opinion on Southampton colours (2008)', url: 'https://efsa.onlinelibrary.wiley.com/doi/10.2903/j.efsa.2008.660' }
@@ -151,7 +155,6 @@ export function analyseFoodProduct(product) {
   const fiber        = round(nutriments.fiber_100g)
   const energyKcal   = round(nutriments['energy-kcal_100g'])
 
-  // Track which nutrients we actually have data for
   const availableNutrients = [salt, sugar, protein, saturatedFat, fiber].filter(v => v !== null)
   const dataQuality = availableNutrients.length === 0 ? 'none'
     : availableNutrients.length <= 2 ? 'partial'
@@ -163,30 +166,37 @@ export function analyseFoodProduct(product) {
 
   const flags = []
   if (salt !== null && salt >= 1.5)
-    flags.push({ level: 'high',     label: 'High salt',              detail: `${salt}g per 100g — above the UK FSA “high” threshold of 1.5g/100g.`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'high',     label: 'High salt',              detail: `${salt}g per 100g — above the UK FSA "high" threshold of 1.5g/100g.`, sources: NUTRIENT_SOURCES })
   else if (salt !== null && salt >= 0.3)
-    flags.push({ level: 'moderate', label: 'Moderate salt',          detail: `${salt}g per 100g (UK FSA “medium” band: 0.3–1.5g/100g).`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'moderate', label: 'Moderate salt',          detail: `${salt}g per 100g (UK FSA "medium" band: 0.3–1.5g/100g).`, sources: NUTRIENT_SOURCES })
 
   if (sugar !== null && sugar >= 22.5)
-    flags.push({ level: 'high',     label: 'High sugar',             detail: `${sugar}g per 100g — above the UK FSA “high” threshold of 22.5g/100g.`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'high',     label: 'High sugar',             detail: `${sugar}g per 100g — above the UK FSA "high" threshold of 22.5g/100g.`, sources: NUTRIENT_SOURCES })
   else if (sugar !== null && sugar >= 5)
-    flags.push({ level: 'moderate', label: 'Moderate sugar',         detail: `${sugar}g per 100g (UK FSA “medium” band: 5–22.5g/100g).`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'moderate', label: 'Moderate sugar',         detail: `${sugar}g per 100g (UK FSA "medium" band: 5–22.5g/100g).`, sources: NUTRIENT_SOURCES })
 
   if (saturatedFat !== null && saturatedFat >= 5)
-    flags.push({ level: 'high',     label: 'High saturated fat',     detail: `${saturatedFat}g per 100g — above the UK FSA “high” threshold of 5g/100g.`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'high',     label: 'High saturated fat',     detail: `${saturatedFat}g per 100g — above the UK FSA "high" threshold of 5g/100g.`, sources: NUTRIENT_SOURCES })
   else if (saturatedFat !== null && saturatedFat >= 1.5)
-    flags.push({ level: 'moderate', label: 'Moderate saturated fat', detail: `${saturatedFat}g per 100g (UK FSA “medium” band: 1.5–5g/100g).`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'moderate', label: 'Moderate saturated fat', detail: `${saturatedFat}g per 100g (UK FSA "medium" band: 1.5–5g/100g).`, sources: NUTRIENT_SOURCES })
 
   if (protein !== null && protein >= 10)
     flags.push({ level: 'good', label: 'Good source of protein', detail: `${protein}g protein per 100g.`, sources: NUTRIENT_SOURCES })
   if (fiber !== null && fiber >= 3)
-    flags.push({ level: 'good', label: 'Source of fibre', detail: `${fiber}g fibre per 100g — meets the EU “source of fibre” criterion (≥3g/100g, EU Reg. 1924/2006).`, sources: NUTRIENT_SOURCES })
+    flags.push({ level: 'good', label: 'Source of fibre', detail: `${fiber}g fibre per 100g — meets the EU "source of fibre" criterion (≥3g/100g, EU Reg. 1924/2006).`, sources: NUTRIENT_SOURCES })
 
   const ingredientsText = (product.ingredients_text || '').toLowerCase()
   const additiveFlags = []
   ADDITIVE_CHECKS.forEach(item => {
     if (ingredientsText.includes(item.match)) additiveFlags.push(item)
   })
+
+  // ── New Ivy-inspired checks ───────────────────────────────────────────────
+  const seedOilFlag = detectSeedOils(ingredientsText, product.ingredients_tags || [])
+  const pesticideFlag = detectPesticideRisk(product.categories_tags || [])
+  const heavyMetalFlags = detectHeavyMetalRisks(product.categories_tags || [], ingredientsText)
+  // Eco-Score and packaging are read directly from product fields in FoodResult
+  // ─────────────────────────────────────────────────────────────────────────
 
   const nutriscore = (product.nutriscore_grade || '').toUpperCase()
   const scoreReasons = []
@@ -200,7 +210,6 @@ export function analyseFoodProduct(product) {
       delta: null,
     })
   } else if (dataQuality === 'none') {
-    // No nutrient data at all — do not fabricate a score
     healthScore = null
     scoreReasons.push({
       impact: 'neutral',
@@ -208,7 +217,6 @@ export function analyseFoodProduct(product) {
       delta: null,
     })
   } else {
-    // Estimate from available nutrients
     healthScore = 55
     const missingNutrients = []
     if (salt === null)         missingNutrients.push('salt')
@@ -233,46 +241,46 @@ export function analyseFoodProduct(product) {
 
     if (flags.some(f => f.level === 'high' && f.label.includes('sugar'))) {
       healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High sugar (${sugar}g/100g) — above UK FSA “high” threshold of 22.5g/100g.`, delta: -20 })
+      scoreReasons.push({ impact: 'negative', text: `High sugar (${sugar}g/100g) — above UK FSA "high" threshold of 22.5g/100g.`, delta: -20 })
     } else if (flags.some(f => f.level === 'moderate' && f.label.includes('sugar'))) {
       healthScore -= 5
       scoreReasons.push({ impact: 'negative', text: `Moderate sugar (${sugar}g/100g) — UK FSA medium band (5–22.5g/100g).`, delta: -5 })
     } else if (sugar !== null) {
-      scoreReasons.push({ impact: 'positive', text: `Low sugar (${sugar}g/100g) — below UK FSA “low” threshold of 5g/100g.`, delta: null })
+      scoreReasons.push({ impact: 'positive', text: `Low sugar (${sugar}g/100g) — below UK FSA "low" threshold of 5g/100g.`, delta: null })
     }
 
     if (flags.some(f => f.level === 'high' && f.label.includes('salt'))) {
       healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High salt (${salt}g/100g) — above UK FSA “high” threshold of 1.5g/100g.`, delta: -20 })
+      scoreReasons.push({ impact: 'negative', text: `High salt (${salt}g/100g) — above UK FSA "high" threshold of 1.5g/100g.`, delta: -20 })
     } else if (flags.some(f => f.level === 'moderate' && f.label.includes('salt'))) {
       healthScore -= 5
       scoreReasons.push({ impact: 'negative', text: `Moderate salt (${salt}g/100g) — UK FSA medium band (0.3–1.5g/100g).`, delta: -5 })
     } else if (salt !== null) {
-      scoreReasons.push({ impact: 'positive', text: `Low salt (${salt}g/100g) — below UK FSA “low” threshold of 0.3g/100g.`, delta: null })
+      scoreReasons.push({ impact: 'positive', text: `Low salt (${salt}g/100g) — below UK FSA "low" threshold of 0.3g/100g.`, delta: null })
     }
 
     if (flags.some(f => f.level === 'high' && f.label.includes('saturated'))) {
       healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High saturated fat (${saturatedFat}g/100g) — above UK FSA “high” threshold of 5g/100g.`, delta: -20 })
+      scoreReasons.push({ impact: 'negative', text: `High saturated fat (${saturatedFat}g/100g) — above UK FSA "high" threshold of 5g/100g.`, delta: -20 })
     } else if (flags.some(f => f.level === 'moderate' && f.label.includes('saturated'))) {
       healthScore -= 5
       scoreReasons.push({ impact: 'negative', text: `Moderate saturated fat (${saturatedFat}g/100g) — UK FSA medium band (1.5–5g/100g).`, delta: -5 })
     } else if (saturatedFat !== null) {
-      scoreReasons.push({ impact: 'positive', text: `Low saturated fat (${saturatedFat}g/100g) — below UK FSA “low” threshold of 1.5g/100g.`, delta: null })
+      scoreReasons.push({ impact: 'positive', text: `Low saturated fat (${saturatedFat}g/100g) — below UK FSA "low" threshold of 1.5g/100g.`, delta: null })
     }
 
     if (flags.some(f => f.level === 'good' && f.label.includes('protein'))) {
       healthScore += 10
-      scoreReasons.push({ impact: 'positive', text: `High protein (${protein}g/100g) — above “good source” threshold of 10g/100g (EU Reg. 1924/2006).`, delta: +10 })
+      scoreReasons.push({ impact: 'positive', text: `High protein (${protein}g/100g) — above "good source" threshold of 10g/100g (EU Reg. 1924/2006).`, delta: +10 })
     } else if (protein !== null) {
-      scoreReasons.push({ impact: 'neutral', text: `Protein: ${protein}g/100g — below “good source” threshold (10g/100g). No adjustment.`, delta: null })
+      scoreReasons.push({ impact: 'neutral', text: `Protein: ${protein}g/100g — below "good source" threshold (10g/100g). No adjustment.`, delta: null })
     }
 
     if (flags.some(f => f.level === 'good' && f.label.includes('fibre'))) {
       healthScore += 10
-      scoreReasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g) — meets EU “source of fibre” criterion (≥3g/100g).`, delta: +10 })
+      scoreReasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g) — meets EU "source of fibre" criterion (≥3g/100g).`, delta: +10 })
     } else if (fiber !== null) {
-      scoreReasons.push({ impact: 'neutral', text: `Fibre: ${fiber}g/100g — below EU “source of fibre” threshold (3g/100g). No adjustment.`, delta: null })
+      scoreReasons.push({ impact: 'neutral', text: `Fibre: ${fiber}g/100g — below EU "source of fibre" threshold (3g/100g). No adjustment.`, delta: null })
     }
 
     healthScore = Math.max(5, Math.min(95, healthScore))
@@ -282,11 +290,5 @@ export function analyseFoodProduct(product) {
     allergens,
     flags,
     additiveFlags,
-    nutrients: { salt, sugar, protein, saturatedFat, fiber, energyKcal },
-    healthScore,
-    scoreReasons,
-    nutriscore,
-    novaGroup: product.nova_group || null,
-    dataQuality,
-  }
-}
+    seedOilFlag,
+    pesticideFlag,
