@@ -1,9 +1,11 @@
 import React from 'react'
 
 const TABS = [
-  { id: 'scan',    label: 'Scan',    emoji: '\uD83D\uDCF7' },
-  { id: 'manual',  label: 'Enter',   emoji: '\u2328\uFE0F' },
-  { id: 'history', label: 'History', emoji: '\uD83D\uDD52' },
+  { id: 'scan',     label: 'Scan',     emoji: '\uD83D\uDCF7' },
+  { id: 'manual',   label: 'Enter',    emoji: '\u2328\uFE0F' },
+  { id: 'history',  label: 'History',  emoji: '\uD83D\uDD52' },
+  { id: 'grocery',  label: 'Grocery',  emoji: '\uD83D\uDED2' },
+  { id: 'progress', label: 'Progress', emoji: '\uD83D\uDCC8' },
 ]
 
 export default function BottomNav({ activeTab, onTabChange }) {

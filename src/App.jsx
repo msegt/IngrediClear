@@ -1,27 +1,29 @@
 import React, { useState } from 'react'
-import LandingPage    from './components/LandingPage.jsx'
-import Header         from './components/Header.jsx'
-import BottomNav      from './components/BottomNav.jsx'
-import Scanner        from './components/Scanner.jsx'
-import ManualEntry    from './components/ManualEntry.jsx'
-import ProductResult  from './components/ProductResult.jsx'
-import FoodResult     from './components/FoodResult.jsx'
-import LoadingSpinner from './components/LoadingSpinner.jsx'
-import ErrorCard      from './components/ErrorCard.jsx'
-import ScanHistory    from './components/ScanHistory.jsx'
-import { fetchProduct }     from './api/openBeautyFacts.js'
-import { fetchFoodProduct } from './api/openFoodFacts.js'
+import LandingPage      from './components/LandingPage.jsx'
+import Header           from './components/Header.jsx'
+import BottomNav        from './components/BottomNav.jsx'
+import Scanner          from './components/Scanner.jsx'
+import ManualEntry      from './components/ManualEntry.jsx'
+import ProductResult    from './components/ProductResult.jsx'
+import FoodResult       from './components/FoodResult.jsx'
+import LoadingSpinner   from './components/LoadingSpinner.jsx'
+import ErrorCard        from './components/ErrorCard.jsx'
+import ScanHistory      from './components/ScanHistory.jsx'
+import GroceryList      from './components/GroceryList.jsx'
+import ProgressTracker  from './components/ProgressTracker.jsx'
+import { fetchProduct }      from './api/openBeautyFacts.js'
+import { fetchFoodProduct }  from './api/openFoodFacts.js'
 import { saveToHistory, getHistory } from './data/history.js'
 
 export default function App() {
-  const [screen, setScreen]               = useState('landing')
-  const [productType, setProductType]     = useState('cosmetics')
-  const [activeTab, setActiveTab]         = useState('scan')
-  const [product, setProduct]             = useState(null)
-  const [loading, setLoading]             = useState(false)
-  const [error, setError]                 = useState(null)
-  const [notFoundMeta, setNotFoundMeta]   = useState(null)
-  const [history, setHistory]             = useState(getHistory())
+  const [screen, setScreen]             = useState('landing')
+  const [productType, setProductType]   = useState('cosmetics')
+  const [activeTab, setActiveTab]       = useState('scan')
+  const [product, setProduct]           = useState(null)
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState(null)
+  const [notFoundMeta, setNotFoundMeta] = useState(null)
+  const [history, setHistory]           = useState(getHistory())
 
   const goHome = () => {
     setScreen('landing')
@@ -41,7 +43,7 @@ export default function App() {
     try {
       const data = productType === 'food'
         ? await fetchFoodProduct(barcode)
-        : await fetchProduct(barcode)          // now includes OBF → OFF → UPC fallback chain
+        : await fetchProduct(barcode)
 
       setProduct({ ...data, _type: productType })
       const updated = saveToHistory({
@@ -49,7 +51,9 @@ export default function App() {
         name:  data.product_name,
         brand: data.brands,
         image: data.image_front_url || data.image_url,
-        type:  productType
+        type:  productType,
+        nova_group:    data.nova_group,
+        nutriscore_grade: data.nutriscore_grade,
       })
       setHistory(updated)
     } catch (err) {
@@ -62,7 +66,6 @@ export default function App() {
 
   // ── Raw ingredient text from paste / OCR ─────────────────────────────────
   const handleIngredients = (ingredientsText) => {
-    // Synthesise a minimal product object that ProductResult understands
     setProduct({
       _type:            'cosmetics',
       _source:          'manual',
@@ -110,7 +113,9 @@ export default function App() {
         name:  data.product_name,
         brand: data.brands,
         image: data.image_front_url || data.image_url,
-        type
+        type,
+        nova_group:       data.nova_group,
+        nutriscore_grade: data.nutriscore_grade,
       })
       setHistory(updated)
     } catch (err) {
@@ -168,15 +173,17 @@ export default function App() {
           </div>
         )}
 
-        {activeTab === 'scan'    && <Scanner      onDetected={handleBarcode}   productType={productType} />}
-        {activeTab === 'manual'  && (
+        {activeTab === 'scan'     && <Scanner     onDetected={handleBarcode}  productType={productType} />}
+        {activeTab === 'manual'   && (
           <ManualEntry
             onSubmit={handleBarcode}
             onIngredients={handleIngredients}
             productType={productType}
           />
         )}
-        {activeTab === 'history' && <ScanHistory  history={filteredHistory}    onSelect={handleBarcode} productType={productType} />}
+        {activeTab === 'history'  && <ScanHistory  history={filteredHistory}  onSelect={handleBarcode} productType={productType} />}
+        {activeTab === 'grocery'  && <GroceryList />}
+        {activeTab === 'progress' && <ProgressTracker history={history} />}
       </div>
 
       <BottomNav
