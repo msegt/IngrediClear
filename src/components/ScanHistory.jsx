@@ -1,24 +1,24 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { clearHistory } from '../data/history.js'
 
 export default function ScanHistory({ history, onSelect, productType = 'cosmetics' }) {
-  const [items, setItems] = React.useState(history)
+  const [items, setItems] = useState(history)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   React.useEffect(() => { setItems(history) }, [history])
 
   const handleClear = () => {
-    if (window.confirm('Clear all scan history?')) {
-      setItems(clearHistory())
-    }
+    setItems(clearHistory())
+    setConfirmClear(false)
   }
 
-  const fallbackIcon = productType === 'food' ? '🍽️' : '🧴'
+  const fallbackIcon = productType === 'food' ? '\uD83C\uDF7D\uFE0F' : '\uD83E\uDDF4'
   const emptyLabel   = productType === 'food' ? 'food products' : 'cosmetics'
 
   if (!items.length) {
     return (
       <div className="card p-8 flex flex-col items-center text-center gap-3" role="status">
-        <span aria-hidden="true" className="text-4xl">🕒</span>
+        <span aria-hidden="true" className="text-4xl">\uD83D\uDD52</span>
         <p className="font-semibold text-white">No history yet</p>
         <p className="text-sm text-slate-400">
           {emptyLabel.charAt(0).toUpperCase() + emptyLabel.slice(1)} you scan will appear here for quick re-access.
@@ -31,13 +31,33 @@ export default function ScanHistory({ history, onSelect, productType = 'cosmetic
     <section aria-label="Scan history" className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-white">Recent scans</h2>
-        <button
-          onClick={handleClear}
-          aria-label="Clear all scan history"
-          className="text-xs text-slate-500 hover:text-red-400 transition py-1 px-2 rounded-lg"
-        >
-          Clear all
-        </button>
+        {confirmClear ? (
+          <div className="flex items-center gap-2" role="group" aria-label="Confirm clear history">
+            <span className="text-xs text-slate-400">Clear all?</span>
+            <button
+              onClick={handleClear}
+              className="text-xs text-red-400 hover:text-red-300 transition font-semibold py-1 px-2 rounded-lg"
+              aria-label="Yes, clear all scan history"
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => setConfirmClear(false)}
+              className="text-xs text-slate-400 hover:text-white transition py-1 px-2 rounded-lg"
+              aria-label="Cancel, keep scan history"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmClear(true)}
+            aria-label="Clear all scan history"
+            className="text-xs text-slate-500 hover:text-red-400 transition py-1 px-2 rounded-lg"
+          >
+            Clear all
+          </button>
+        )}
       </div>
       <ul className="flex flex-col gap-2">
         {items.map((item, i) => (

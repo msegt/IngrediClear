@@ -20,7 +20,7 @@ function SourceLinks({ sources }) {
           rel="noopener noreferrer"
           className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2 leading-relaxed"
         >
-          🔗 {s.label}
+          <span aria-hidden="true">🔗 </span>{s.label}
         </a>
       ))}
     </div>
@@ -34,11 +34,12 @@ function UsdaTooltip() {
       <button
         type="button"
         aria-label="Nutrition data source information"
+        aria-expanded={open}
         onClick={() => setOpen(o => !o)}
         onBlur={() => setOpen(false)}
         className="ml-1.5 w-4 h-4 rounded-full bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white transition text-[10px] font-bold leading-none flex items-center justify-center focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-400"
       >
-        i
+        <span aria-hidden="true">i</span>
       </button>
       {open && (
         <span
@@ -100,7 +101,8 @@ function NovaBadge({ group }) {
       <span className="relative inline-flex">
         <button
           type="button"
-          aria-label={`NOVA group ${num} — tap for explanation`}
+          aria-label={`NOVA group ${num}: ${NOVA_INFO[num].label}. Tap for explanation.`}
+          aria-expanded={open}
           onClick={() => setOpen(o => !o)}
           onBlur={() => setOpen(false)}
           style={{
@@ -110,7 +112,7 @@ function NovaBadge({ group }) {
           }}
           className="text-sm font-black px-3 py-1.5 rounded-lg transition hover:brightness-110 focus:outline-none focus-visible:ring-2"
         >
-          {num} ℹ️
+          {num} <span aria-hidden="true">ℹ️</span>
         </button>
         {open && (
           <span
@@ -128,6 +130,7 @@ function NovaBadge({ group }) {
                 <span
                   className="shrink-0 font-black text-xs w-4 h-4 rounded flex items-center justify-center text-white"
                   style={{ backgroundColor: NOVA_COLORS[n].bg, opacity: n === num ? 1 : 0.45 }}
+                  aria-hidden="true"
                 >
                   {n}
                 </span>
@@ -177,14 +180,14 @@ export default function FoodResult({ product, onBack }) {
   }
 
   const nutritionItems = [
-    { label: 'Energy',    value: analysis.nutrients.energyKcal,   unit: 'kcal/100g' },
-    { label: 'Fat',       value: analysis.nutrients.totalFat,     unit: 'g/100g' },
-    { label: 'Sat. fat',  value: analysis.nutrients.saturatedFat, unit: 'g/100g' },
-    { label: 'Carbs',     value: analysis.nutrients.carbohydrates,unit: 'g/100g' },
-    { label: 'Sugar',     value: analysis.nutrients.sugar,        unit: 'g/100g' },
-    { label: 'Fibre',     value: analysis.nutrients.fiber,        unit: 'g/100g' },
-    { label: 'Protein',   value: analysis.nutrients.protein,      unit: 'g/100g' },
-    { label: 'Salt',      value: analysis.nutrients.salt,         unit: 'g/100g' },
+    { label: 'Energy',   value: analysis.nutrients.energyKcal,    unit: 'kcal/100g' },
+    { label: 'Fat',      value: analysis.nutrients.totalFat,      unit: 'g/100g' },
+    { label: 'Sat. fat', value: analysis.nutrients.saturatedFat,  unit: 'g/100g' },
+    { label: 'Carbs',    value: analysis.nutrients.carbohydrates, unit: 'g/100g' },
+    { label: 'Sugar',    value: analysis.nutrients.sugar,         unit: 'g/100g' },
+    { label: 'Fibre',    value: analysis.nutrients.fiber,         unit: 'g/100g' },
+    { label: 'Protein',  value: analysis.nutrients.protein,       unit: 'g/100g' },
+    { label: 'Salt',     value: analysis.nutrients.salt,          unit: 'g/100g' },
   ].filter(item => item.value !== null && item.value !== undefined)
 
   return (
@@ -198,18 +201,24 @@ export default function FoodResult({ product, onBack }) {
       )}
 
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium">
-          ← Scan another
+        <button
+          onClick={onBack}
+          aria-label="Scan another product"
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium"
+        >
+          <span aria-hidden="true">←</span> Scan another
         </button>
         <button
           onClick={handleGroceryToggle}
-          aria-label={inGroceryList ? 'Remove from grocery list' : 'Add to grocery list'}
-          title={inGroceryList ? 'Remove from grocery list' : 'Add to grocery list'}
+          aria-label={inGroceryList
+            ? `Remove ${product.product_name || 'this product'} from grocery list`
+            : `Add ${product.product_name || 'this product'} to grocery list`
+          }
           className={`text-xl transition ${
             inGroceryList ? 'text-emerald-400 hover:text-red-400' : 'text-slate-500 hover:text-emerald-400'
           }`}
         >
-          {inGroceryList ? '🛒✓' : '🛒'}
+          <span aria-hidden="true">{inGroceryList ? '\uD83D\uDED2\u2713' : '\uD83D\uDED2'}</span>
         </button>
       </div>
 
@@ -227,7 +236,7 @@ export default function FoodResult({ product, onBack }) {
               onError={e => e.target.parentElement.style.display = 'none'}
             />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition pointer-events-none">
-              <span className="text-white text-xl drop-shadow-lg">🔍</span>
+              <span className="text-white text-xl drop-shadow-lg" aria-hidden="true">🔍</span>
             </div>
           </button>
         )}
@@ -256,7 +265,7 @@ export default function FoodResult({ product, onBack }) {
 
       {analysis.allergens.length > 0 && (
         <div className="card p-4 border border-orange-500/30 bg-orange-500/10">
-          <p className="text-sm font-semibold text-orange-400 mb-2">⚠️ Contains allergens</p>
+          <p className="text-sm font-semibold text-orange-400 mb-2"><span aria-hidden="true">⚠️ </span>Contains allergens</p>
           <div className="flex flex-wrap gap-2 mb-2">
             {analysis.allergens.map((a, i) => (
               <span key={i} className="text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">{a.label}</span>
@@ -269,7 +278,7 @@ export default function FoodResult({ product, onBack }) {
 
       {analysis.flags.length > 0 && (
         <div className="card p-4">
-          <p className="text-sm font-semibold text-white mb-2">📊 Nutritional flags</p>
+          <p className="text-sm font-semibold text-white mb-2"><span aria-hidden="true">📊 </span>Nutritional flags</p>
           <div className="flex flex-col gap-3">
             {analysis.flags.map((flag, i) => (
               <div key={i} className={`rounded-xl p-3 border ${
@@ -288,7 +297,7 @@ export default function FoodResult({ product, onBack }) {
 
       {analysis.additiveFlags.length > 0 && (
         <div className="card p-4">
-          <p className="text-sm font-semibold text-white mb-2">🚩 Notable ingredients</p>
+          <p className="text-sm font-semibold text-white mb-2"><span aria-hidden="true">🚩 </span>Notable ingredients</p>
           <div className="flex flex-col gap-3">
             {analysis.additiveFlags.map((item, i) => (
               <div key={i} className="rounded-xl p-3 border border-slate-700 bg-slate-800/70">
@@ -301,7 +310,6 @@ export default function FoodResult({ product, onBack }) {
         </div>
       )}
 
-      {/* ── Seed oils ───────────────────────────────────────────────── */}
       {analysis.seedOilFlag && (
         <div className="card p-4 border border-yellow-500/20 bg-yellow-500/5">
           <p className="text-sm font-semibold text-white mb-1">{analysis.seedOilFlag.label}</p>
@@ -317,7 +325,6 @@ export default function FoodResult({ product, onBack }) {
         </div>
       )}
 
-      {/* ── Pesticide risk ──────────────────────────────────────────── */}
       {analysis.pesticideFlag && (
         <div className="card p-4 border border-lime-500/20 bg-lime-500/5">
           <p className="text-sm font-semibold text-white mb-1">{analysis.pesticideFlag.label}</p>
@@ -326,10 +333,9 @@ export default function FoodResult({ product, onBack }) {
         </div>
       )}
 
-      {/* ── Heavy metals ────────────────────────────────────────────── */}
       {analysis.heavyMetalFlags && analysis.heavyMetalFlags.length > 0 && (
         <div className="card p-4">
-          <p className="text-sm font-semibold text-white mb-2">⚗️ Heavy metal risk</p>
+          <p className="text-sm font-semibold text-white mb-2"><span aria-hidden="true">⚗️ </span>Heavy metal risk</p>
           <div className="flex flex-col gap-3">
             {analysis.heavyMetalFlags.map((item, i) => (
               <div key={i} className="rounded-xl p-3 border border-slate-600 bg-slate-800/50">
@@ -342,7 +348,6 @@ export default function FoodResult({ product, onBack }) {
         </div>
       )}
 
-      {/* ── Packaging flags ─────────────────────────────────────────── */}
       <PackagingFlags packagingTags={product.packaging_tags || []} />
 
       {nutritionItems.length > 0 && (
@@ -351,15 +356,17 @@ export default function FoodResult({ product, onBack }) {
             <p className="text-sm font-semibold text-white">Nutrition per 100g</p>
             {usdaEnriched && <UsdaTooltip />}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <dl className="grid grid-cols-2 gap-2">
             {nutritionItems.map(item => (
               <div key={item.label} className="bg-slate-800/60 rounded-xl p-3 text-center">
-                <p className="text-xs text-slate-400">{item.label}</p>
-                <p className="text-lg font-bold text-white mt-1">{item.value}</p>
-                <p className="text-xs text-slate-600">{item.unit}</p>
+                <dt className="text-xs text-slate-400">{item.label}</dt>
+                <dd className="text-lg font-bold text-white mt-1">
+                  {item.value}
+                  <span className="text-xs text-slate-600 font-normal block">{item.unit}</span>
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
         </div>
       )}
 

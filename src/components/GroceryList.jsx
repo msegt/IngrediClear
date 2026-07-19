@@ -36,6 +36,7 @@ function processingLabel(avg) {
 
 export default function GroceryList({ onScanBarcode }) {
   const [list, setList] = useState(getGroceryList)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   useEffect(() => { setList(getGroceryList()) }, [])
 
@@ -44,7 +45,8 @@ export default function GroceryList({ onScanBarcode }) {
   }
 
   const handleClear = () => {
-    if (window.confirm('Clear your grocery list?')) setList(clearGroceryList())
+    setList(clearGroceryList())
+    setConfirmClear(false)
   }
 
   const avg = avgNova(list)
@@ -56,7 +58,7 @@ export default function GroceryList({ onScanBarcode }) {
         <span aria-hidden="true" className="text-4xl">🛒</span>
         <p className="font-semibold text-white">Your grocery list is empty</p>
         <p className="text-sm text-slate-400">
-          Tap the 🛒 button on any scanned food product to save it here.
+          Tap the <span aria-label="shopping cart">\uD83D\uDED2</span> button on any scanned food product to save it here.
         </p>
       </div>
     )
@@ -65,22 +67,45 @@ export default function GroceryList({ onScanBarcode }) {
   return (
     <section aria-label="Grocery list" className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-white">🛒 Grocery list</h2>
-        <button
-          onClick={handleClear}
-          className="text-xs text-slate-500 hover:text-red-400 transition py-1 px-2 rounded-lg"
-        >
-          Clear all
-        </button>
+        <h2 className="font-semibold text-white"><span aria-hidden="true">�\uDED2 </span>Grocery list</h2>
+        {confirmClear ? (
+          <div className="flex items-center gap-2" role="group" aria-label="Confirm clear grocery list">
+            <span className="text-xs text-slate-400">Clear all?</span>
+            <button
+              onClick={handleClear}
+              className="text-xs text-red-400 hover:text-red-300 transition font-semibold py-1 px-2 rounded-lg"
+              aria-label="Yes, clear grocery list"
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => setConfirmClear(false)}
+              className="text-xs text-slate-400 hover:text-white transition py-1 px-2 rounded-lg"
+              aria-label="Cancel, keep grocery list"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmClear(true)}
+            aria-label="Clear all items from grocery list"
+            className="text-xs text-slate-500 hover:text-red-400 transition py-1 px-2 rounded-lg"
+          >
+            Clear all
+          </button>
+        )}
       </div>
 
       {avg && label && (
         <div
           className="rounded-xl p-3 border text-center"
+          role="note"
+          aria-label={`Average processing level: NOVA ${avg}, ${label.text}`}
           style={{ borderColor: label.color + '55', backgroundColor: label.color + '18' }}
         >
-          <p className="text-xs text-slate-400">Average processing level</p>
-          <p className="text-lg font-bold mt-0.5" style={{ color: label.color }}>
+          <p className="text-xs text-slate-400" aria-hidden="true">Average processing level</p>
+          <p className="text-lg font-bold mt-0.5" style={{ color: label.color }} aria-hidden="true">
             NOVA {avg} — {label.text}
           </p>
           <p className="text-xs text-slate-500 mt-1">
@@ -104,17 +129,19 @@ export default function GroceryList({ onScanBarcode }) {
                   {item.nutriscore && (
                     <span
                       className="text-xs font-bold px-1.5 py-0.5 rounded"
+                      aria-label={`Nutri-Score ${item.nutriscore.toUpperCase()}`}
                       style={{ backgroundColor: NUTRISCORE_COLORS[item.nutriscore.toUpperCase()] || '#555', color: '#fff' }}
                     >
-                      NS {item.nutriscore.toUpperCase()}
+                      <span aria-hidden="true">NS {item.nutriscore.toUpperCase()}</span>
                     </span>
                   )}
                   {item.novaGroup && (
                     <span
                       className="text-xs font-bold px-1.5 py-0.5 rounded"
+                      aria-label={`NOVA group ${item.novaGroup}`}
                       style={{ backgroundColor: NOVA_COLORS[item.novaGroup] || '#555', color: '#fff' }}
                     >
-                      NOVA {item.novaGroup}
+                      <span aria-hidden="true">NOVA {item.novaGroup}</span>
                     </span>
                   )}
                 </div>
@@ -124,7 +151,7 @@ export default function GroceryList({ onScanBarcode }) {
                   <button
                     onClick={() => onScanBarcode(item.barcode)}
                     className="text-xs text-brand-400 hover:text-brand-300 transition"
-                    aria-label={`Re-scan ${item.name}`}
+                    aria-label={`Re-scan ${item.name || 'this product'}`}
                   >
                     Scan
                   </button>
@@ -132,7 +159,7 @@ export default function GroceryList({ onScanBarcode }) {
                 <button
                   onClick={() => handleRemove(item.barcode)}
                   className="text-xs text-slate-500 hover:text-red-400 transition"
-                  aria-label={`Remove ${item.name} from grocery list`}
+                  aria-label={`Remove ${item.name || 'this product'} from grocery list`}
                 >
                   Remove
                 </button>

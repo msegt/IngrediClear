@@ -21,7 +21,7 @@ const IMPACT_STYLE = {
   },
 }
 
-const IMPACT_ICON  = { positive: '+', negative: '−', neutral: '•' }
+const IMPACT_ICON  = { positive: '+', negative: '\u2212', neutral: '\u2022' }
 const IMPACT_LABEL = { positive: 'Helps', negative: 'Hurts', neutral: 'Info' }
 
 function DeltaBadge({ delta, style }) {
@@ -45,13 +45,21 @@ export default function NutritionGauge({ score, protein, scoreReasons = [], data
     : score >= 50 ? '#f59e0b'
     : '#ef4444'
 
+  const gaugeLabel = hasScore
+    ? `Health score: ${score} out of 100`
+    : 'Health score: not enough data to calculate'
+
   return (
     <div className="card p-5 flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 items-center">
         {/* Gauge */}
         <div className="flex flex-col items-center justify-center">
-          <div className="relative w-36 h-36">
-            <svg viewBox="0 0 140 140" className="w-full h-full -rotate-90">
+          <div
+            className="relative w-36 h-36"
+            role="img"
+            aria-label={gaugeLabel}
+          >
+            <svg viewBox="0 0 140 140" className="w-full h-full -rotate-90" aria-hidden="true" focusable="false">
               <circle cx="70" cy="70" r="54" stroke="#1e293b" strokeWidth="12" fill="none" />
               {hasScore && (
                 <circle
@@ -65,7 +73,7 @@ export default function NutritionGauge({ score, protein, scoreReasons = [], data
                 />
               )}
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
               {hasScore ? (
                 <>
                   <span className="text-3xl font-bold text-white">{score}</span>
@@ -76,7 +84,7 @@ export default function NutritionGauge({ score, protein, scoreReasons = [], data
               )}
             </div>
           </div>
-          <p className="text-sm font-semibold text-white mt-2">Health score</p>
+          <p className="text-sm font-semibold text-white mt-2" aria-hidden="true">Health score</p>
           {!hasScore && (
             <p className="text-xs text-slate-500 text-center mt-1 max-w-[120px] leading-snug">
               Not enough data
@@ -86,9 +94,12 @@ export default function NutritionGauge({ score, protein, scoreReasons = [], data
 
         {/* Protein + data quality badge */}
         <div className="flex flex-col gap-3">
-          <div className="rounded-2xl bg-slate-800 p-4 border border-slate-700">
-            <p className="text-xs text-slate-400">Protein</p>
-            <p className="text-3xl font-bold text-white mt-1">
+          <div
+            className="rounded-2xl bg-slate-800 p-4 border border-slate-700"
+            aria-label={protein !== null && protein !== undefined ? `Protein: ${protein} grams per 100g` : 'Protein: no data'}
+          >
+            <p className="text-xs text-slate-400" aria-hidden="true">Protein</p>
+            <p className="text-3xl font-bold text-white mt-1" aria-hidden="true">
               {protein !== null && protein !== undefined ? protein : <span className="text-slate-500">—</span>}
               <span className="text-base text-slate-400"> g/100g</span>
             </p>
@@ -98,16 +109,16 @@ export default function NutritionGauge({ score, protein, scoreReasons = [], data
               dataQuality === 'none'
                 ? 'bg-slate-700/40 border-slate-600/40 text-slate-400'
                 : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300'
-            }`}>
+            }`} role="note">
               {dataQuality === 'none'
-                ? '⚠️ No nutritional data'
-                : '⚠️ Partial data only'}
+                ? <><span aria-hidden="true">⚠️ </span>No nutritional data</>
+                : <><span aria-hidden="true">⚠️ </span>Partial data only</>}
             </div>
           )}
         </div>
       </div>
 
-      {/* Score breakdown — always visible */}
+      {/* Score breakdown */}
       {scoreReasons.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Score breakdown</p>
@@ -120,9 +131,9 @@ export default function NutritionGauge({ score, protein, scoreReasons = [], data
               >
                 <span
                   className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 ${style.badge}`}
-                  aria-hidden="true"
+                  aria-label={IMPACT_LABEL[reason.impact]}
                 >
-                  {IMPACT_ICON[reason.impact]}
+                  <span aria-hidden="true">{IMPACT_ICON[reason.impact]}</span>
                 </span>
                 <span className="flex-1 leading-relaxed">{reason.text}</span>
                 <DeltaBadge delta={reason.delta} style={style} />

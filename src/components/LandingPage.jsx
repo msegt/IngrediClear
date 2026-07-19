@@ -2,7 +2,7 @@ import React from 'react'
 
 function Logo() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="72" height="72" aria-hidden="true">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="72" height="72" aria-hidden="true" focusable="false">
       <rect width="1024" height="1024" rx="220" fill="#0f172a"/>
       <circle cx="440" cy="420" r="220" fill="none" stroke="#e2e8f0" strokeWidth="60" strokeLinecap="round"/>
       <line x1="610" y1="590" x2="760" y2="760" stroke="#e2e8f0" strokeWidth="68" strokeLinecap="round"/>
@@ -15,10 +15,10 @@ function Logo() {
 }
 
 const FEATURES = [
-  { emoji: '📷', title: 'Scan a barcode', desc: 'Point your camera at any product barcode for an instant analysis.' },
-  { emoji: '⌨️', title: 'Type it in', desc: 'Enter a barcode number manually if scanning is not possible.' },
-  { emoji: '🧴', title: 'Cosmetics', desc: 'Check for harmful chemicals, banned substances, and fragrance allergens.' },
-  { emoji: '🍽️', title: 'Food', desc: 'See allergens, additives, Nutri-Score, and Nova processing level.' },
+  { emoji: '\uD83D\uDCF7', title: 'Scan a barcode', desc: 'Point your camera at any product barcode for an instant analysis.' },
+  { emoji: '\u2328\uFE0F', title: 'Type it in', desc: 'Enter a barcode number manually if scanning is not possible.' },
+  { emoji: '\uD83E\uDDF4', title: 'Cosmetics', desc: 'Check for harmful chemicals, banned substances, and fragrance allergens.' },
+  { emoji: '\uD83C\uDF7D\uFE0F', title: 'Food', desc: 'See allergens, additives, Nutri-Score, and Nova processing level.' },
 ]
 
 export default function LandingPage({ onGetStarted }) {
@@ -35,14 +35,15 @@ export default function LandingPage({ onGetStarted }) {
             IngrediClear
           </h1>
           <p className="text-slate-400 mt-2 text-base leading-relaxed max-w-xs mx-auto">
-            Know exactly what's in your cosmetics and food — before you buy or use them.
+            Know exactly what’s in your cosmetics and food — before you buy or use them.
           </p>
         </div>
         <button
           onClick={onGetStarted}
+          aria-label="Get started with IngrediClear"
           className="btn-primary w-full max-w-xs text-base mt-2"
         >
-          Get started →
+          Get started <span aria-hidden="true">→</span>
         </button>
         <p className="text-xs text-slate-600">Free · No sign-up · Open data</p>
       </div>
@@ -58,7 +59,7 @@ export default function LandingPage({ onGetStarted }) {
       <div className="grid grid-cols-2 gap-3 mb-10">
         {FEATURES.map(f => (
           <div key={f.title} className="card p-4 flex flex-col gap-2">
-            <span className="text-2xl">{f.emoji}</span>
+            <span aria-hidden="true" className="text-2xl">{f.emoji}</span>
             <p className="text-sm font-semibold text-white leading-tight">{f.title}</p>
             <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
           </div>

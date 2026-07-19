@@ -15,13 +15,11 @@ export default function BottomNav({ activeTab, onTabChange }) {
       className="sticky bottom-0 z-50 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/60"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div role="tablist" className="flex">
+      <div className="flex">
         {TABS.map(tab => (
           <button
             key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            aria-label={tab.label}
+            aria-current={activeTab === tab.id ? 'page' : undefined}
             onClick={() => onTabChange(tab.id)}
             className={`relative flex-1 flex flex-col items-center justify-center py-3 gap-1 min-h-[56px] transition-all duration-150 active:scale-95 ${
               activeTab === tab.id ? 'text-brand-400' : 'text-slate-500 hover:text-slate-300'
