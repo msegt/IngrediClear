@@ -154,6 +154,8 @@ export function analyseFoodProduct(product) {
   const saturatedFat = round(nutriments['saturated-fat_100g'])
   const fiber        = round(nutriments.fiber_100g)
   const energyKcal   = round(nutriments['energy-kcal_100g'])
+  const totalFat      = round(nutriments['fat_100g'])
+  const carbohydrates = round(nutriments['carbohydrates_100g'])
 
   const availableNutrients = [salt, sugar, protein, saturatedFat, fiber].filter(v => v !== null)
   const dataQuality = availableNutrients.length === 0 ? 'none'
@@ -294,7 +296,7 @@ export function analyseFoodProduct(product) {
     seedOilFlag,
     pesticideFlag,
     heavyMetalFlags,
-    nutrients: { salt, sugar, protein, saturatedFat, fiber, energyKcal },
+    nutrients: { salt, sugar, protein, saturatedFat, fiber, energyKcal, totalFat, carbohydrates },
     healthScore,
     scoreReasons,
     nutriscore,
