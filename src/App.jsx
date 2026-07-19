@@ -128,40 +128,48 @@ export default function App() {
 
   const filteredHistory = history.filter(h => h.type === productType)
 
+  // ── Landing screen (no header/nav) ────────────────────────────────────────
   if (screen === 'landing') {
-    return <LandingPage onGetStarted={() => setScreen('main')} />
+    return (
+      <main id="main-content">
+        <LandingPage onGetStarted={() => setScreen('main')} />
+      </main>
+    )
   }
 
+  // ── Product result screen ─────────────────────────────────────────────────
   if (product && !loading) {
     return (
       <div className="min-h-screen flex flex-col max-w-lg mx-auto">
         <Header productType={productType} onProductTypeChange={setProductType} onGoHome={goHome} />
-        <div className="flex-1 px-4 py-4 animate-slide-up overflow-y-auto">
+        <main id="main-content" className="flex-1 px-4 py-4 animate-slide-up overflow-y-auto">
           {product._type === 'food'
             ? <FoodResult    product={product} onBack={handleReset} />
             : <ProductResult product={product} onBack={handleReset} />}
-        </div>
+        </main>
       </div>
     )
   }
 
+  // ── Loading screen ────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col max-w-lg mx-auto">
         <Header productType={productType} onProductTypeChange={setProductType} onGoHome={goHome} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+        <main id="main-content" className="flex-1 flex flex-col items-center justify-center gap-4">
           <LoadingSpinner />
           <p className="text-sm text-slate-400">Looking up product…</p>
-        </div>
+        </main>
       </div>
     )
   }
 
+  // ── Main tab screen ───────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col max-w-lg mx-auto">
       <Header productType={productType} onProductTypeChange={setProductType} onGoHome={goHome} />
 
-      <div className="flex-1 px-4 pt-4 pb-2 overflow-y-auto">
+      <main id="main-content" className="flex-1 px-4 pt-4 pb-2 overflow-y-auto">
         {error && (
           <div className="mb-4">
             <ErrorCard
@@ -182,9 +190,9 @@ export default function App() {
           />
         )}
         {activeTab === 'history'  && <ScanHistory  history={filteredHistory}  onSelect={handleBarcode} productType={productType} />}
-        {activeTab === 'grocery'  && <GroceryList />}
+        {activeTab === 'grocery'  && <GroceryList  onScanBarcode={handleBarcode} />}
         {activeTab === 'progress' && <ProgressTracker history={history} />}
-      </div>
+      </main>
 
       <BottomNav
         activeTab={activeTab}

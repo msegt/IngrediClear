@@ -86,7 +86,7 @@ export default function NutritionGauge({ score, protein, scoreReasons = [], data
           </div>
           <p className="text-sm font-semibold text-white mt-2" aria-hidden="true">Health score</p>
           {!hasScore && (
-            <p className="text-xs text-slate-500 text-center mt-1 max-w-[120px] leading-snug">
+            <p className="text-xs text-slate-400 text-center mt-1 max-w-[120px] leading-snug">
               Not enough data
             </p>
           )}
@@ -140,7 +140,8 @@ export default function NutritionGauge({ score, protein, scoreReasons = [], data
               </div>
             )
           })}
-          <p className="text-[10px] text-slate-600 mt-1 leading-relaxed">
+          {/* text-slate-400 used here: passes WCAG AA at ~6.3:1 on bg-slate-900 */}
+          <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
             Score uses UK FSA traffic-light thresholds. A score with partial data is less reliable — check the Nutrition per 100g section below.
           </p>
         </div>

@@ -30,7 +30,8 @@ export default function Header({ productType, onProductTypeChange, onGoHome }) {
           <Logo />
           <div className="min-w-0 text-left">
             <p className="text-base font-bold text-white leading-none">IngrediClear</p>
-            <p className="text-xs text-slate-500 leading-none mt-0.5">Tap to go home</p>
+            {/* text-slate-400 ensures ≥5.9:1 contrast on bg-slate-950 (passes WCAG AA) */}
+            <p className="text-xs text-slate-400 leading-none mt-0.5">Tap to go home</p>
           </div>
         </button>
 

@@ -161,7 +161,7 @@ export default function ProductResult({ product, onBack }) {
               href={`https://world.openbeautyfacts.org/product/${product.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-center text-xs text-slate-500 hover:text-brand-400 transition underline underline-offset-2"
+              className="text-center text-xs text-slate-400 hover:text-brand-400 transition underline underline-offset-2"
             >
               Also add these ingredients to Open Beauty Facts to help others
               <span aria-hidden="true"> →</span>
@@ -263,7 +263,8 @@ export default function ProductResult({ product, onBack }) {
         </>
       )}
 
-      <p className="text-center text-xs text-slate-600 px-4">
+      {/* text-slate-400 ensures passing contrast on bg-slate-950 */}
+      <p className="text-center text-xs text-slate-400 px-4">
         Data from Open Beauty Facts (CC BY-SA). Not medical advice — consult a dermatologist for personal guidance.
       </p>
     </div>

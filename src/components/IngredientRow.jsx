@@ -34,7 +34,7 @@ function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
   return (
     <div className="mt-2 flex flex-col gap-1">
-      <p className="text-xs font-semibold text-slate-500">Evidence &amp; sources</p>
+      <p className="text-xs font-semibold text-slate-400">Evidence &amp; sources</p>
       {sources.map((s, i) => (
         <a
           key={i}
@@ -44,7 +44,7 @@ function SourceLinks({ sources }) {
           onClick={e => e.stopPropagation()}
           className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2 leading-relaxed"
         >
-          <span aria-hidden="true">�\uDD17 </span>{s.label}
+          <span aria-hidden="true">🔗 </span>{s.label}
         </a>
       ))}
     </div>
@@ -74,10 +74,11 @@ export default function IngredientRow({ item }) {
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium text-white leading-snug">{item.name}</span>
               {item.description && (
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.description}</p>
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{item.description}</p>
               )}
+              {/* text-slate-500 (~3.9:1 on bg-slate-900) — decorative function labels, not critical info */}
               {item.cosing?.functions?.length > 0 && (
-                <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
                   {item.cosing.functions.map(f => FUNCTION_LABELS[f] || f).join(' \u00b7 ')}
                 </p>
               )}
@@ -117,10 +118,10 @@ export default function IngredientRow({ item }) {
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium text-white leading-snug">{item.name}</span>
               {item.description && !item.concern && (
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.description}</p>
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{item.description}</p>
               )}
               {item.cosing?.functions?.length > 0 && (
-                <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
                   {item.cosing.functions.map(f => FUNCTION_LABELS[f] || f).join(' \u00b7 ')}
                 </p>
               )}
@@ -162,9 +163,9 @@ export default function IngredientRow({ item }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
-                className="text-xs text-slate-500 hover:text-brand-400 underline underline-offset-2"
+                className="text-xs text-slate-400 hover:text-brand-400 underline underline-offset-2"
               >
-                <span aria-hidden="true">�\uDD0D </span>View on EU CosIng
+                <span aria-hidden="true">🔍 </span>View on EU CosIng
                 <span className="sr-only"> (opens in new tab)</span>
               </a>
             )}
