@@ -15,14 +15,20 @@ function novaColor(avg) {
   return NOVA_COLORS[4]
 }
 
+const TREND_LABELS = {
+  improving: 'Improving',
+  worsening: 'More processed',
+  stable:    'Stable',
+}
+
 const TREND_EMOJI = {
-  improving: '📉 Improving',
-  worsening: '📈 More processed',
-  stable: '➡️ Stable',
+  improving: '📉',
+  worsening: '📈',
+  stable:    '➡️',
 }
 
 export default function ProgressTracker() {
-  const weeks = useMemo(() => getWeeklyProgress(), [])
+  const weeks   = useMemo(() => getWeeklyProgress(), [])
   const summary = useMemo(() => getProgressSummary(), [])
 
   if (!summary) {
@@ -37,31 +43,51 @@ export default function ProgressTracker() {
     )
   }
 
-  const maxNova = 4
-  const BAR_HEIGHT = 80 // px max bar height
+  const maxNova    = 4
+  const BAR_HEIGHT = 80
+
+  // Build a descriptive label for the chart that enumerates each week's data
+  const chartAriaLabel = weeks.length
+    ? `Weekly NOVA averages: ${
+        weeks.map(w => `${w.weekLabel} — NOVA ${w.avgNova} (${w.count} scan${w.count !== 1 ? 's' : ''})`).join(', ')
+      }`
+    : 'Weekly NOVA bar chart — no data'
 
   return (
     <section aria-label="Progress tracker" className="flex flex-col gap-4">
-      <h2 className="font-semibold text-white">📊 Food processing tracker</h2>
+      <h2 className="font-semibold text-white">
+        <span aria-hidden="true">📊 </span>Food processing tracker
+      </h2>
 
       <div className="card p-4 flex flex-wrap gap-4 justify-between">
         <div className="text-center">
           <p className="text-xs text-slate-400">Avg NOVA (all time)</p>
-          <p className="text-2xl font-black mt-1" style={{ color: novaColor(summary.overallAvg) }}>
-            {summary.overallAvg}
+          <p
+            className="text-2xl font-black mt-1"
+            aria-label={`Average NOVA score all time: ${summary.overallAvg}`}
+            style={{ color: novaColor(summary.overallAvg) }}
+          >
+            <span aria-hidden="true">{summary.overallAvg}</span>
           </p>
         </div>
         <div className="text-center">
           <p className="text-xs text-slate-400">Weekly trend</p>
-          <p className="text-sm font-semibold mt-1 text-white">{TREND_EMOJI[summary.trend]}</p>
+          <p className="text-sm font-semibold mt-1 text-white">
+            <span aria-hidden="true">{TREND_EMOJI[summary.trend]} </span>
+            {TREND_LABELS[summary.trend]}
+          </p>
         </div>
         <div className="text-center">
           <p className="text-xs text-slate-400">Food scans</p>
-          <p className="text-2xl font-black mt-1 text-white">{summary.scanCount}</p>
+          <p
+            className="text-2xl font-black mt-1 text-white"
+            aria-label={`Total food scans: ${summary.scanCount}`}
+          >
+            <span aria-hidden="true">{summary.scanCount}</span>
+          </p>
         </div>
       </div>
 
-      {/* Simple bar chart using plain divs — no library needed */}
       <div className="card p-4">
         <p className="text-xs text-slate-400 mb-3">Average NOVA by week (lower = less processed)</p>
         {weeks.length === 1 ? (
@@ -71,20 +97,23 @@ export default function ProgressTracker() {
             className="flex items-end gap-2 overflow-x-auto pb-2"
             style={{ minHeight: BAR_HEIGHT + 32 }}
             role="img"
-            aria-label="Weekly NOVA bar chart"
+            aria-label={chartAriaLabel}
           >
             {weeks.map(week => {
-              const height = Math.round((week.avgNova / maxNova) * BAR_HEIGHT)
-              const color = novaColor(week.avgNova)
-              // Short week label: W28
+              const height     = Math.round((week.avgNova / maxNova) * BAR_HEIGHT)
+              const color      = novaColor(week.avgNova)
               const shortLabel = week.weekLabel.split('-')[1]
               return (
-                <div key={week.weekLabel} className="flex flex-col items-center gap-1 flex-shrink-0" style={{ minWidth: 36 }}>
+                <div
+                  key={week.weekLabel}
+                  className="flex flex-col items-center gap-1 flex-shrink-0"
+                  style={{ minWidth: 36 }}
+                  aria-hidden="true"
+                >
                   <span className="text-xs font-bold" style={{ color }}>{week.avgNova}</span>
                   <div
                     className="w-7 rounded-t-lg transition-all"
                     style={{ height, backgroundColor: color }}
-                    title={`${week.weekLabel}: avg NOVA ${week.avgNova} (${week.count} scans)`}
                   />
                   <span className="text-[10px] text-slate-500">{shortLabel}</span>
                 </div>
@@ -95,7 +124,15 @@ export default function ProgressTracker() {
         <p className="text-xs text-slate-600 mt-2">
           NOVA scale: 1 = unprocessed · 2 = culinary ingredient · 3 = processed · 4 = ultra-processed.
           Based on{' '}
-          <a href="https://world.openfoodfacts.org/nova" target="_blank" rel="noopener noreferrer" className="text-brand-400 underline underline-offset-2">Open Food Facts NOVA data</a>.
+          <a
+            href="https://world.openfoodfacts.org/nova"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-400 underline underline-offset-2"
+          >
+            Open Food Facts NOVA data
+            <span className="sr-only"> (opens in new tab)</span>
+          </a>.
         </p>
       </div>
     </section>
