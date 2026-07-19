@@ -57,7 +57,7 @@ export default function IngredientCapture({ onAnalyse }) {
 
       const cleaned = text
         .replace(/\r\n/g, '\n')
-        .replace(/[^a-zA-Z0-9\s,;.()\/\-+%\u00C0-\u024F]/g, ' ')
+        .replace(/[^a-zA-Z0-9\s,;.()\\/\-+%\u00C0-\u024F]/g, ' ')
         .replace(/\s{2,}/g, ' ')
         .trim()
 
@@ -86,8 +86,8 @@ export default function IngredientCapture({ onAnalyse }) {
         className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800"
       >
         {[
-          { id: 'paste', label: 'Paste text', emoji: '\uD83D\uDCCB' },
-          { id: 'photo', label: 'Scan photo', emoji: '\uD83D\uDCF7' },
+          { id: 'paste', label: 'Paste text', emoji: '📋' },
+          { id: 'photo', label: 'Scan photo', emoji: '📷' },
         ].map(m => (
           <button
             key={m.id}
@@ -116,6 +116,7 @@ export default function IngredientCapture({ onAnalyse }) {
               value={pasteText}
               onChange={e => setPasteText(e.target.value)}
               placeholder="e.g. Aqua, Glycerin, Niacinamide, Sodium Hyaluronate, Phenoxyethanol…"
+              aria-label="Paste ingredients"
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/50 transition text-sm resize-none leading-relaxed"
             />
             <button
@@ -156,7 +157,7 @@ export default function IngredientCapture({ onAnalyse }) {
             >
               {ocrStatus === 'loading'
                 ? <><span aria-hidden="true" className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Processing…</span></>
-                : <><span aria-hidden="true">�\uDCF7</span><span>{previewUrl ? 'Choose a different photo' : 'Open camera / gallery'}</span></>}
+                : <><span aria-hidden="true">📷</span><span>{previewUrl ? 'Choose a different photo' : 'Open camera / gallery'}</span></>}
             </button>
 
             {previewUrl && (
