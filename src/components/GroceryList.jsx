@@ -58,7 +58,7 @@ export default function GroceryList({ onScanBarcode }) {
         <span aria-hidden="true" className="text-4xl">🛒</span>
         <p className="font-semibold text-white">Your grocery list is empty</p>
         <p className="text-sm text-slate-400">
-          Tap the <span aria-label="shopping cart">\uD83D\uDED2</span> button on any scanned food product to save it here.
+          Tap the <span aria-hidden="true">🛒</span><span className="sr-only">shopping cart</span> button on any scanned food product to save it here.
         </p>
       </div>
     )
@@ -67,7 +67,7 @@ export default function GroceryList({ onScanBarcode }) {
   return (
     <section aria-label="Grocery list" className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-white"><span aria-hidden="true">�\uDED2 </span>Grocery list</h2>
+        <h2 className="font-semibold text-white"><span aria-hidden="true">🛒 </span>Grocery list</h2>
         {confirmClear ? (
           <div className="flex items-center gap-2" role="group" aria-label="Confirm clear grocery list">
             <span className="text-xs text-slate-400">Clear all?</span>

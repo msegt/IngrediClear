@@ -53,10 +53,10 @@ export default function ProductResult({ product, onBack }) {
   }, [overallScore, hasIngredients, harmful, caution, allergens, unknown])
 
   const scoreConfig = {
-    safe:    { emoji: '\u2705', label: 'Generally Safe',               color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
-    caution: { emoji: '\u26a0\ufe0f', label: 'Use with Caution',      color: 'text-yellow-400',  bg: 'bg-yellow-500/10  border-yellow-500/30'  },
-    harmful: { emoji: '\uD83D\uDEAB', label: 'Harmful Ingredients Detected', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30' },
-    unknown: { emoji: '\u2753', label: 'Ingredients Not Available',    color: 'text-slate-400',  bg: 'bg-slate-700/40   border-slate-600/40'    }
+    safe:    { emoji: '✅', label: 'Generally Safe',                color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+    caution: { emoji: '⚠️', label: 'Use with Caution',             color: 'text-yellow-400',  bg: 'bg-yellow-500/10  border-yellow-500/30'  },
+    harmful: { emoji: '🚫', label: 'Harmful Ingredients Detected', color: 'text-red-400',     bg: 'bg-red-500/10 border-red-500/30'         },
+    unknown: { emoji: '❓', label: 'Ingredients Not Available',    color: 'text-slate-400',   bg: 'bg-slate-700/40   border-slate-600/40'   },
   }
   const score    = scoreConfig[overallScore]
   const imageUrl = product.image_url || product.image_front_url
@@ -231,12 +231,12 @@ export default function ProductResult({ product, onBack }) {
             </div>
           )}
 
-          {harmful.length > 0   && <IngredientSection title="Harmful Ingredients"      titleEmoji="\uD83D\uDEAB" items={harmful} />}
-          {caution.length > 0   && <IngredientSection title="Use with Caution"         titleEmoji="\u26A0\uFE0F" items={caution} />}
+          {harmful.length > 0   && <IngredientSection title="Harmful Ingredients"       titleEmoji="🚫" items={harmful} />}
+          {caution.length > 0   && <IngredientSection title="Use with Caution"          titleEmoji="⚠️" items={caution} />}
           {allergens.length > 0 && (
             <IngredientSection
               title="Fragrance Allergens Detected"
-              titleEmoji="\uD83E\uDD27"
+              titleEmoji="🤧"
               items={allergens}
               note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them. If you have an allergy or sensitivity to any of these, do not use this product."
             />
@@ -251,7 +251,7 @@ export default function ProductResult({ product, onBack }) {
                 aria-controls="safe-unclassified-list"
               >
                 <span><span aria-hidden="true">✅</span> Safe &amp; unclassified ({safe.length + unknown.length})</span>
-                <span className="text-xs" aria-hidden="true">{showAll ? '\u25b2 Hide' : '\u25bc Show'}</span>
+                <span className="text-xs" aria-hidden="true">{showAll ? '▲ Hide' : '▼ Show'}</span>
               </button>
               {showAll && (
                 <div id="safe-unclassified-list" className="px-4 pb-3">
@@ -263,7 +263,6 @@ export default function ProductResult({ product, onBack }) {
         </>
       )}
 
-      {/* text-slate-400 ensures passing contrast on bg-slate-950 */}
       <p className="text-center text-xs text-slate-400 px-4">
         Data from Open Beauty Facts (CC BY-SA). Not medical advice — consult a dermatologist for personal guidance.
       </p>
