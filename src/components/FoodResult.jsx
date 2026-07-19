@@ -176,6 +176,17 @@ export default function FoodResult({ product, onBack }) {
     }
   }
 
+  const nutritionItems = [
+    { label: 'Energy',    value: analysis.nutrients.energyKcal,   unit: 'kcal/100g' },
+    { label: 'Fat',       value: analysis.nutrients.totalFat,     unit: 'g/100g' },
+    { label: 'Sat. fat',  value: analysis.nutrients.saturatedFat, unit: 'g/100g' },
+    { label: 'Carbs',     value: analysis.nutrients.carbohydrates,unit: 'g/100g' },
+    { label: 'Sugar',     value: analysis.nutrients.sugar,        unit: 'g/100g' },
+    { label: 'Fibre',     value: analysis.nutrients.fiber,        unit: 'g/100g' },
+    { label: 'Protein',   value: analysis.nutrients.protein,      unit: 'g/100g' },
+    { label: 'Salt',      value: analysis.nutrients.salt,         unit: 'g/100g' },
+  ].filter(item => item.value !== null && item.value !== undefined)
+
   return (
     <div className="flex flex-col gap-4 pb-8">
       {lightboxOpen && imageUrl && (
@@ -334,26 +345,23 @@ export default function FoodResult({ product, onBack }) {
       {/* ── Packaging flags ─────────────────────────────────────────── */}
       <PackagingFlags packagingTags={product.packaging_tags || []} />
 
-      <div className="card p-4">
-        <div className="flex items-center mb-3">
-          <p className="text-sm font-semibold text-white">Nutrition per 100g</p>
-          {usdaEnriched && <UsdaTooltip />}
+      {nutritionItems.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center mb-3">
+            <p className="text-sm font-semibold text-white">Nutrition per 100g</p>
+            {usdaEnriched && <UsdaTooltip />}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {nutritionItems.map(item => (
+              <div key={item.label} className="bg-slate-800/60 rounded-xl p-3 text-center">
+                <p className="text-xs text-slate-400">{item.label}</p>
+                <p className="text-lg font-bold text-white mt-1">{item.value}</p>
+                <p className="text-xs text-slate-600">{item.unit}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: 'Sugar',    value: analysis.nutrients.sugar,        unit: 'g/100g' },
-            { label: 'Salt',     value: analysis.nutrients.salt,         unit: 'g/100g' },
-            { label: 'Sat. fat', value: analysis.nutrients.saturatedFat, unit: 'g/100g' },
-            { label: 'Fibre',    value: analysis.nutrients.fiber,        unit: 'g/100g' }
-          ].map(item => (
-            <div key={item.label} className="bg-slate-800/60 rounded-xl p-3 text-center">
-              <p className="text-xs text-slate-400">{item.label}</p>
-              <p className="text-lg font-bold text-white mt-1">{item.value ?? '–'}</p>
-              <p className="text-xs text-slate-600">{item.unit}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
 
       <p className="text-center text-xs text-slate-600 px-4">
         {usdaEnriched
