@@ -52,14 +52,39 @@ export default function Scanner({ onDetected, productType = 'cosmetics' }) {
     ? 'Point your camera at the barcode on the food packaging'
     : 'Point your camera at the barcode on the cosmetic product'
 
+  // Derive a status message for the persistent live region
+  const statusMsg =
+    status === 'initializing' ? 'Starting camera…' :
+    status === 'active'       ? 'Camera active — scanning for barcode' :
+    status === 'error'        ? `Camera unavailable: ${errorMsg}` : ''
+
   return (
     <div className="flex flex-col gap-4">
+      {/*
+        Persistent live region that exists in the DOM at all times.
+        Conditional overlays would mount/unmount and miss announcements.
+      */}
       <div
-        role="img"
-        aria-label={status === 'active' ? 'Camera active — scanning for barcode' : status === 'error' ? 'Camera unavailable' : 'Camera loading'}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {statusMsg}
+      </div>
+
+      <div
+        aria-hidden="true"
         className="relative w-full aspect-[4/3] bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 scanner-container"
       >
-        <video ref={videoRef} className="w-full h-full object-cover" muted playsInline aria-hidden="true" />
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          muted
+          playsInline
+          title="Barcode scanner camera feed"
+          aria-hidden="true"
+        />
 
         {status === 'active' && (
           <>
@@ -84,22 +109,23 @@ export default function Scanner({ onDetected, productType = 'cosmetics' }) {
         )}
 
         {status === 'initializing' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/80" aria-live="polite">
-            <div aria-hidden="true" className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/80" aria-hidden="true">
+            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-slate-400">Starting camera…</p>
           </div>
         )}
 
         {status === 'error' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center" role="alert">
-            <span aria-hidden="true" className="text-4xl">📷</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center" aria-hidden="true">
+            <span className="text-4xl">📷</span>
             <p className="text-sm text-slate-300 font-medium">Camera unavailable</p>
             <p className="text-xs text-slate-400 leading-relaxed">{errorMsg}</p>
           </div>
         )}
       </div>
 
-      <p className="text-center text-sm text-slate-400" aria-live="polite">{hintText}</p>
+      {/* Static hint — not a live region since the text does not change */}
+      <p className="text-center text-sm text-slate-400">{hintText}</p>
     </div>
   )
 }

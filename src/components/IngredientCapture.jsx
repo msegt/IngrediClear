@@ -5,10 +5,6 @@
  *  • Paste  — textarea → instant client-side analysis
  *  • Photo  — camera/gallery → Tesseract.js OCR (bundled via npm, not CDN)
  *            → extracted text shown for review → analysis
- *
- * Tesseract is imported as a normal npm dependency so Vite bundles it
- * correctly and the PWA service worker never tries to intercept an
- * unpkg/CDN dynamic import (which caused the previous network errors).
  */
 import React, { useState, useRef } from 'react'
 
@@ -42,7 +38,6 @@ export default function IngredientCapture({ onAnalyse }) {
     setOcrStatus('loading')
 
     try {
-      // Bundled npm import — no CDN fetch, no SW conflict
       const { createWorker } = await import('tesseract.js')
 
       const worker = await createWorker('eng', 1, {
@@ -91,8 +86,8 @@ export default function IngredientCapture({ onAnalyse }) {
         className="flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800"
       >
         {[
-          { id: 'paste', label: '📋 Paste text' },
-          { id: 'photo', label: '📷 Scan photo' },
+          { id: 'paste', label: 'Paste text', emoji: '\uD83D\uDCCB' },
+          { id: 'photo', label: 'Scan photo', emoji: '\uD83D\uDCF7' },
         ].map(m => (
           <button
             key={m.id}
@@ -104,7 +99,7 @@ export default function IngredientCapture({ onAnalyse }) {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            {m.label}
+            <span aria-hidden="true">{m.emoji} </span>{m.label}
           </button>
         ))}
       </div>
@@ -121,7 +116,6 @@ export default function IngredientCapture({ onAnalyse }) {
               value={pasteText}
               onChange={e => setPasteText(e.target.value)}
               placeholder="e.g. Aqua, Glycerin, Niacinamide, Sodium Hyaluronate, Phenoxyethanol…"
-              aria-label="Paste ingredients"
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/50 transition text-sm resize-none leading-relaxed"
             />
             <button
@@ -149,7 +143,7 @@ export default function IngredientCapture({ onAnalyse }) {
               accept="image/*"
               capture="environment"
               className="sr-only"
-              aria-label="Choose or take a photo"
+              aria-label="Choose or take a photo of ingredient label"
               onChange={handleFileChange}
             />
 
@@ -157,29 +151,42 @@ export default function IngredientCapture({ onAnalyse }) {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={ocrStatus === 'loading'}
+              aria-disabled={ocrStatus === 'loading'}
               className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {ocrStatus === 'loading'
                 ? <><span aria-hidden="true" className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Processing…</span></>
-                : <><span aria-hidden="true">📷</span><span>{previewUrl ? 'Choose a different photo' : 'Open camera / gallery'}</span></>}
+                : <><span aria-hidden="true">�\uDCF7</span><span>{previewUrl ? 'Choose a different photo' : 'Open camera / gallery'}</span></>}
             </button>
 
             {previewUrl && (
               <img
                 src={previewUrl}
-                alt="Selected ingredient label"
+                alt="Selected ingredient label photo"
                 className="w-full rounded-xl object-contain max-h-48 bg-slate-800"
               />
             )}
 
             {ocrStatus === 'loading' && (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between text-xs text-slate-400">
+              <div
+                className="flex flex-col gap-1.5"
+                role="status"
+                aria-label={ocrStage ? `${ocrStage}${ocrProgress > 0 ? ` ${ocrProgress}%` : ''}` : 'Processing image…'}
+              >
+                <div className="flex justify-between text-xs text-slate-400" aria-hidden="true">
                   <span>{ocrStage || 'Preparing…'}</span>
                   <span>{ocrProgress > 0 ? `${ocrProgress}%` : ''}</span>
                 </div>
-                <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  role="progressbar"
+                  aria-valuenow={ocrProgress > 0 ? ocrProgress : undefined}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="OCR processing progress"
+                  className="h-1.5 bg-slate-700 rounded-full overflow-hidden"
+                >
                   <div
+                    aria-hidden="true"
                     className="h-full bg-brand-500 rounded-full transition-all duration-300"
                     style={{ width: ocrProgress > 0 ? `${ocrProgress}%` : '100%', opacity: ocrProgress > 0 ? 1 : 0.4 }}
                   />
@@ -208,7 +215,6 @@ export default function IngredientCapture({ onAnalyse }) {
                   rows={7}
                   value={ocrText}
                   onChange={e => setOcrText(e.target.value)}
-                  aria-label="Extracted ingredient text"
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/50 transition text-sm resize-none leading-relaxed"
                 />
                 <button

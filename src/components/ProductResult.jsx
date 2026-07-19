@@ -8,7 +8,6 @@ import IngredientCapture from './IngredientCapture.jsx'
 export default function ProductResult({ product, onBack }) {
   const [showAll, setShowAll]           = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
-  // When user adds ingredients inline for a product that had none, we overlay them here
   const [manualIngredients, setManualIngredients] = useState(null)
 
   const ingredientsText = manualIngredients ?? (product.ingredients_text || '')
@@ -54,10 +53,10 @@ export default function ProductResult({ product, onBack }) {
   }, [overallScore, hasIngredients, harmful, caution, allergens, unknown])
 
   const scoreConfig = {
-    safe:    { emoji: '✅', label: 'Generally Safe',               color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
-    caution: { emoji: '⚠️', label: 'Use with Caution',            color: 'text-yellow-400',  bg: 'bg-yellow-500/10  border-yellow-500/30'  },
-    harmful: { emoji: '🚫', label: 'Harmful Ingredients Detected', color: 'text-red-400',     bg: 'bg-red-500/10     border-red-500/30'      },
-    unknown: { emoji: '❓', label: 'Ingredients Not Available',    color: 'text-slate-400',  bg: 'bg-slate-700/40   border-slate-600/40'    }
+    safe:    { emoji: '\u2705', label: 'Generally Safe',               color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+    caution: { emoji: '\u26a0\ufe0f', label: 'Use with Caution',      color: 'text-yellow-400',  bg: 'bg-yellow-500/10  border-yellow-500/30'  },
+    harmful: { emoji: '\uD83D\uDEAB', label: 'Harmful Ingredients Detected', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30' },
+    unknown: { emoji: '\u2753', label: 'Ingredients Not Available',    color: 'text-slate-400',  bg: 'bg-slate-700/40   border-slate-600/40'    }
   }
   const score    = scoreConfig[overallScore]
   const imageUrl = product.image_url || product.image_front_url
@@ -83,11 +82,19 @@ export default function ProductResult({ product, onBack }) {
       )}
 
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium">
-          ← Scan another
+        <button
+          onClick={onBack}
+          aria-label="Scan another product"
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium"
+        >
+          <span aria-hidden="true">←</span> Scan another
         </button>
-        <button onClick={handleShare} className="flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300 transition font-medium">
-          <span>↑</span> Share
+        <button
+          onClick={handleShare}
+          aria-label="Share this result"
+          className="flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300 transition font-medium"
+        >
+          <span aria-hidden="true">↑</span> Share
         </button>
       </div>
 
@@ -106,7 +113,7 @@ export default function ProductResult({ product, onBack }) {
               onError={e => e.target.parentElement.style.display = 'none'}
             />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition pointer-events-none">
-              <span className="text-white text-xl drop-shadow-lg">🔍</span>
+              <span className="text-white text-xl drop-shadow-lg" aria-hidden="true">🔍</span>
             </div>
           </button>
         )}
@@ -124,16 +131,16 @@ export default function ProductResult({ product, onBack }) {
       {/* Category-specific warnings */}
       {categoryWarnings.length > 0 && (
         <div className="card p-4 border border-blue-500/30 bg-blue-500/10">
-          <p className="text-xs font-semibold text-blue-400 mb-2">📋 {category} — What to watch for</p>
+          <p className="text-xs font-semibold text-blue-400 mb-2"><span aria-hidden="true">📋</span> {category} — What to watch for</p>
           <ul className="flex flex-col gap-1">
             {categoryWarnings.map((w, i) => (
-              <li key={i} className="text-xs text-slate-300 flex gap-2"><span className="text-blue-400 mt-0.5">•</span>{w}</li>
+              <li key={i} className="text-xs text-slate-300 flex gap-2"><span className="text-blue-400 mt-0.5" aria-hidden="true">•</span>{w}</li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* No-ingredients capture prompt — shown instead of score card until user adds ingredients */}
+      {/* No-ingredients capture prompt */}
       {!hasIngredients && (
         <div className="flex flex-col gap-4">
           <div className="card p-4 border border-amber-500/30 bg-amber-500/10 flex gap-3 items-start">
@@ -149,15 +156,15 @@ export default function ProductResult({ product, onBack }) {
 
           <IngredientCapture onAnalyse={(text) => setManualIngredients(text)} />
 
-          {/* Still let them contribute to the community database */}
           {product.id && product._source !== 'upcitemdb' && product._source !== 'manual' && (
             <a
               href={`https://world.openbeautyfacts.org/product/${product.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-center text-xs text-slate-500 hover:text-brand-400 transition underline underline-offset-2"
+              className="text-center text-xs text-slate-400 hover:text-brand-400 transition underline underline-offset-2"
             >
-              Also add these ingredients to Open Beauty Facts to help others →
+              Also add these ingredients to Open Beauty Facts to help others
+              <span aria-hidden="true"> →</span>
             </a>
           )}
         </div>
@@ -166,7 +173,6 @@ export default function ProductResult({ product, onBack }) {
       {/* Everything below only renders once we have ingredients */}
       {hasIngredients && (
         <>
-          {/* Banner if ingredients were added manually */}
           {manualIngredients && (
             <div className="card p-3 border border-brand-500/30 bg-brand-500/10 flex items-center gap-3">
               <span aria-hidden="true">ℹ️</span>
@@ -176,7 +182,7 @@ export default function ProductResult({ product, onBack }) {
               <button
                 onClick={() => setManualIngredients(null)}
                 className="text-xs text-slate-400 hover:text-white transition flex-shrink-0"
-                aria-label="Clear manual ingredients"
+                aria-label="Clear manually entered ingredients"
               >
                 Clear
               </button>
@@ -184,30 +190,38 @@ export default function ProductResult({ product, onBack }) {
           )}
 
           {/* Overall score */}
-          <div className={`card p-4 border ${score.bg} flex items-center gap-4`}>
+          <div
+            className={`card p-4 border ${score.bg} flex items-center gap-4`}
+            role="status"
+            aria-label={`Overall result: ${score.label}. ${scoreReason}`}
+          >
             <span className="text-4xl" aria-hidden="true">{score.emoji}</span>
             <div className="flex-1 min-w-0">
-              <p className={`font-bold text-lg ${score.color}`}>{score.label}</p>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">{scoreReason}</p>
+              <p className={`font-bold text-lg ${score.color}`} aria-hidden="true">{score.label}</p>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed" aria-hidden="true">{scoreReason}</p>
             </div>
           </div>
 
           {/* Stat pills */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-2" role="list" aria-label="Ingredient summary">
             {[
               { label: 'Harmful',   count: harmful.length,  color: 'text-red-400     bg-red-500/10    border-red-500/20'      },
               { label: 'Allergens', count: allergens.length, color: 'text-orange-400  bg-orange-500/10 border-orange-500/20'   },
               { label: 'Caution',   count: caution.length,  color: 'text-yellow-400  bg-yellow-500/10 border-yellow-500/20'   },
               { label: 'Safe',      count: safe.length,     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
             ].map(s => (
-              <div key={s.label} className={`border rounded-xl p-2.5 text-center ${s.color}`}>
-                <div className="text-xl font-bold">{s.count}</div>
-                <div className="text-xs mt-0.5 opacity-80">{s.label}</div>
+              <div
+                key={s.label}
+                role="listitem"
+                aria-label={`${s.count} ${s.label.toLowerCase()} ingredient${s.count !== 1 ? 's' : ''}`}
+                className={`border rounded-xl p-2.5 text-center ${s.color}`}
+              >
+                <div className="text-xl font-bold" aria-hidden="true">{s.count}</div>
+                <div className="text-xs mt-0.5 opacity-80" aria-hidden="true">{s.label}</div>
               </div>
             ))}
           </div>
 
-          {/* Unknown ingredients disclaimer */}
           {unknown.length > 0 && (
             <div className="card p-3 border border-slate-600/40 bg-slate-700/20 flex gap-3 items-start">
               <span className="text-lg mt-0.5" aria-hidden="true">❓</span>
@@ -217,11 +231,12 @@ export default function ProductResult({ product, onBack }) {
             </div>
           )}
 
-          {harmful.length > 0   && <IngredientSection title="🚫 Harmful Ingredients" items={harmful} />}
-          {caution.length > 0   && <IngredientSection title="⚠️ Use with Caution" items={caution} />}
+          {harmful.length > 0   && <IngredientSection title="Harmful Ingredients"      titleEmoji="\uD83D\uDEAB" items={harmful} />}
+          {caution.length > 0   && <IngredientSection title="Use with Caution"         titleEmoji="\u26A0\uFE0F" items={caution} />}
           {allergens.length > 0 && (
             <IngredientSection
-              title="🤧 Fragrance Allergens Detected"
+              title="Fragrance Allergens Detected"
+              titleEmoji="\uD83E\uDD27"
               items={allergens}
               note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them. If you have an allergy or sensitivity to any of these, do not use this product."
             />
@@ -233,12 +248,13 @@ export default function ProductResult({ product, onBack }) {
                 onClick={() => setShowAll(v => !v)}
                 className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-400 hover:text-white transition"
                 aria-expanded={showAll}
+                aria-controls="safe-unclassified-list"
               >
-                <span>✅ Safe &amp; unclassified ({safe.length + unknown.length})</span>
-                <span className="text-xs" aria-hidden="true">{showAll ? '▲ Hide' : '▼ Show'}</span>
+                <span><span aria-hidden="true">✅</span> Safe &amp; unclassified ({safe.length + unknown.length})</span>
+                <span className="text-xs" aria-hidden="true">{showAll ? '\u25b2 Hide' : '\u25bc Show'}</span>
               </button>
               {showAll && (
-                <div className="px-4 pb-3">
+                <div id="safe-unclassified-list" className="px-4 pb-3">
                   {[...safe, ...unknown].map((item, i) => <IngredientRow key={i} item={item} />)}
                 </div>
               )}
@@ -247,18 +263,21 @@ export default function ProductResult({ product, onBack }) {
         </>
       )}
 
-      <p className="text-center text-xs text-slate-600 px-4">
+      {/* text-slate-400 ensures passing contrast on bg-slate-950 */}
+      <p className="text-center text-xs text-slate-400 px-4">
         Data from Open Beauty Facts (CC BY-SA). Not medical advice — consult a dermatologist for personal guidance.
       </p>
     </div>
   )
 }
 
-function IngredientSection({ title, items, note }) {
+function IngredientSection({ title, titleEmoji, items, note }) {
   return (
     <div className="card">
       <div className="px-4 pt-4 pb-2">
-        <h3 className="font-semibold text-white text-sm">{title}</h3>
+        <h3 className="font-semibold text-white text-sm">
+          {titleEmoji && <span aria-hidden="true">{titleEmoji} </span>}{title}
+        </h3>
         {note && <p className="text-xs text-slate-400 mt-1 leading-relaxed">{note}</p>}
       </div>
       <div className="px-4 pb-2">

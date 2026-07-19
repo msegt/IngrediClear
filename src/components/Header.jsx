@@ -28,9 +28,9 @@ export default function Header({ productType, onProductTypeChange, onGoHome }) {
           className="flex items-center gap-2.5 min-w-0 flex-1 active:opacity-70 transition-opacity"
         >
           <Logo />
-          <div className="min-w-0 text-left">
+          <div className="min-w-0 text-left" aria-hidden="true">
             <p className="text-base font-bold text-white leading-none">IngrediClear</p>
-            <p className="text-xs text-slate-500 leading-none mt-0.5">Tap to go home</p>
+            <p className="text-xs text-slate-400 leading-none mt-0.5">Tap to go home</p>
           </div>
         </button>
 

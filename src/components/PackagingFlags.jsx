@@ -1,6 +1,5 @@
 import React from 'react'
 
-// Packaging materials that raise environmental or chemical safety concerns
 const RISKY_PACKAGING = [
   {
     pattern: 'polystyrene',
@@ -22,22 +21,18 @@ const RISKY_PACKAGING = [
   },
 ]
 
-/**
- * Displays packaging risk flags from Open Food Facts packaging_tags.
- * @param {string[]} packagingTags  packaging_tags from Open Food Facts product
- */
 export default function PackagingFlags({ packagingTags = [] }) {
   const tags = packagingTags.map(t => t.toLowerCase())
-
   const risks = RISKY_PACKAGING.filter(risk =>
     tags.some(tag => tag.includes(risk.pattern))
   )
-
   if (risks.length === 0) return null
 
   return (
     <div className="card p-4 border border-yellow-500/30 bg-yellow-500/10">
-      <p className="text-sm font-semibold text-yellow-300 mb-2">📦 Packaging concern</p>
+      <p className="text-sm font-semibold text-yellow-300 mb-2">
+        <span aria-hidden="true">📦 </span>Packaging concern
+      </p>
       <div className="flex flex-col gap-3">
         {risks.map((risk, i) => (
           <div key={i}>
@@ -50,7 +45,8 @@ export default function PackagingFlags({ packagingTags = [] }) {
                 rel="noopener noreferrer"
                 className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2"
               >
-                🔗 {risk.source.label}
+                <span aria-hidden="true">🔗 </span>{risk.source.label}
+                <span className="sr-only"> (opens in new tab)</span>
               </a>
             </div>
           </div>

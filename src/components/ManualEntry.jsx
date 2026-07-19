@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { searchProductsByName }     from '../api/openBeautyFacts.js'
 import { searchFoodProductsByName } from '../api/openFoodFacts.js'
 import IngredientCapture            from './IngredientCapture.jsx'
@@ -9,6 +9,7 @@ export default function ManualEntry({ onSubmit, onIngredients, productType = 'co
   const [results, setResults]         = useState([])
   const [searching, setSearching]     = useState(false)
   const [searchError, setSearchError] = useState('')
+  const resultsRef = useRef(null)
 
   const isFood = productType === 'food'
   const namePlaceholder = isFood ? 'e.g. Nutella, Greek yogurt, oat milk' : 'e.g. Nivea Sun Cream SPF50'
@@ -31,6 +32,8 @@ export default function ManualEntry({ onSubmit, onIngredients, productType = 'co
           ? await searchFoodProductsByName(trimmed)
           : await searchProductsByName(trimmed)
         setResults(products)
+        // Move focus to results region so screen readers announce the new content
+        setTimeout(() => resultsRef.current?.focus(), 100)
       } catch (err) {
         setSearchError(err.message)
       } finally {
@@ -42,10 +45,9 @@ export default function ManualEntry({ onSubmit, onIngredients, productType = 'co
   const handleSelectResult = (product) => onSubmit(product.code || product.id)
 
   const modes = [
-    { id: 'barcode',    label: 'Barcode' },
-    { id: 'name',       label: 'Search' },
-    // Show paste/photo only for cosmetics where database gaps are common
-    ...(!isFood ? [{ id: 'ingredients', label: '📋 Paste / Photo' }] : [])
+    { id: 'barcode',      label: 'Barcode',      emoji: null },
+    { id: 'name',         label: 'Search',       emoji: null },
+    ...(!isFood ? [{ id: 'ingredients', label: 'Paste / Photo', emoji: '📋' }] : [])
   ]
 
   return (
@@ -68,12 +70,12 @@ export default function ManualEntry({ onSubmit, onIngredients, productType = 'co
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            {m.label}
+            {m.emoji && <span aria-hidden="true">{m.emoji} </span>}{m.label}
           </button>
         ))}
       </div>
 
-      {/* ── Barcode input ─────────────────────────────────────────────── */}
+      {/* Barcode input */}
       {mode === 'barcode' && (
         <div className="card p-5">
           <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
@@ -103,7 +105,7 @@ export default function ManualEntry({ onSubmit, onIngredients, productType = 'co
         </div>
       )}
 
-      {/* ── Name search ───────────────────────────────────────────────── */}
+      {/* Name search */}
       {mode === 'name' && (
         <div className="card p-5">
           <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
@@ -134,7 +136,7 @@ export default function ManualEntry({ onSubmit, onIngredients, productType = 'co
         </div>
       )}
 
-      {/* ── Paste / Photo ─────────────────────────────────────────────── */}
+      {/* Paste / Photo */}
       {mode === 'ingredients' && (
         <IngredientCapture onAnalyse={onIngredients} />
       )}
@@ -148,7 +150,12 @@ export default function ManualEntry({ onSubmit, onIngredients, productType = 'co
 
       {/* Search results */}
       {results.length > 0 && (
-        <section aria-label="Search results" className="card">
+        <section
+          ref={resultsRef}
+          tabIndex={-1}
+          aria-label={`Search results: ${results.length} product${results.length !== 1 ? 's' : ''} found`}
+          className="card focus:outline-none"
+        >
           <p className="text-xs font-semibold text-slate-400 px-4 pt-4 pb-2">
             {results.length} result{results.length !== 1 ? 's' : ''} — tap a product to check its ingredients
           </p>

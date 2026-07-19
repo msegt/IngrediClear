@@ -23,9 +23,9 @@ function HazardBar({ score }) {
         aria-label={`Hazard score ${score} out of 10`}
         className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden"
       >
-        <div className={`h-full rounded-full transition-all ${colour}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full rounded-full transition-all ${colour}`} style={{ width: `${pct}%` }} aria-hidden="true" />
       </div>
-      <span className="text-xs text-slate-400 w-12 text-right">Score {score}/10</span>
+      <span className="text-xs text-slate-400 w-12 text-right" aria-hidden="true">Score {score}/10</span>
     </div>
   )
 }
@@ -34,7 +34,7 @@ function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
   return (
     <div className="mt-2 flex flex-col gap-1">
-      <p className="text-xs font-semibold text-slate-500">Evidence &amp; sources</p>
+      <p className="text-xs font-semibold text-slate-400">Evidence &amp; sources</p>
       {sources.map((s, i) => (
         <a
           key={i}
@@ -44,7 +44,7 @@ function SourceLinks({ sources }) {
           onClick={e => e.stopPropagation()}
           className="text-xs text-brand-400 hover:text-brand-300 underline underline-offset-2 leading-relaxed"
         >
-          🔗 {s.label}
+          <span aria-hidden="true">🔗 </span>{s.label}
         </a>
       ))}
     </div>
@@ -57,7 +57,6 @@ export default function IngredientRow({ item }) {
 
   const hasDetail = !!(item.concern || item.alternatives || (item.sources && item.sources.length > 0))
 
-  // Use the numeric cosIngId for a direct record link; gracefully absent when null.
   const cosingUrl = item.cosing?.cosIngId != null
     ? `${COSING_BASE}${item.cosing.cosIngId}`
     : null
@@ -66,53 +65,85 @@ export default function IngredientRow({ item }) {
     if (hasDetail) setExpanded(v => !v)
   }
 
+  if (!hasDetail) {
+    return (
+      <div className="ingredient-row">
+        <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${config.dot}`} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-medium text-white leading-snug">{item.name}</span>
+              {item.description && (
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{item.description}</p>
+              )}
+              {/* text-slate-500 (~3.9:1 on bg-slate-900) — decorative function labels, not critical info */}
+              {item.cosing?.functions?.length > 0 && (
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                  {item.cosing.functions.map(f => FUNCTION_LABELS[f] || f).join(' \u00b7 ')}
+                </p>
+              )}
+            </div>
+            <div className="flex gap-1 flex-shrink-0 items-center flex-wrap justify-end">
+              {item.isAllergen && (
+                <span className="text-xs px-2 py-0.5 rounded-full badge-allergen">Allergen</span>
+              )}
+              {item.cosing?.eu === 'restricted' && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-400 border border-amber-800/40">EU Restricted</span>
+              )}
+              {item.cosing?.eu === 'prohibited' && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/40 text-red-400 border border-red-800/40">EU Prohibited</span>
+              )}
+              <span className={`text-xs px-2 py-0.5 rounded-full ${config.badge}`}>{config.label}</span>
+            </div>
+          </div>
+          {item.hazardScore != null && <HazardBar score={item.hazardScore} />}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div
-      role={hasDetail ? 'button' : undefined}
-      tabIndex={hasDetail ? 0 : undefined}
-      aria-expanded={hasDetail ? expanded : undefined}
-      aria-label={hasDetail
-        ? `${item.name} — ${config.label}${item.isAllergen ? ', allergen' : ''}. Tap for details.`
-        : `${item.name} — ${config.label}`
-      }
-      onClick={handleToggle}
-      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleToggle()}
-      className={`ingredient-row ${hasDetail ? 'cursor-pointer select-none' : 'cursor-default'}`}
-    >
+    <div className="ingredient-row">
       <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${config.dot}`} />
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <span className="text-sm font-medium text-white leading-snug">{item.name}</span>
-            {item.description && !item.concern && (
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.description}</p>
-            )}
-            {item.cosing?.functions?.length > 0 && (
-              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                {item.cosing.functions.map(f => FUNCTION_LABELS[f] || f).join(' · ')}
-              </p>
-            )}
+        <button
+          type="button"
+          onClick={handleToggle}
+          onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleToggle()}
+          aria-expanded={expanded}
+          aria-label={`${item.name} \u2014 ${config.label}${item.isAllergen ? ', allergen' : ''}. Tap for details.`}
+          className="w-full text-left cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:rounded"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-medium text-white leading-snug">{item.name}</span>
+              {item.description && !item.concern && (
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{item.description}</p>
+              )}
+              {item.cosing?.functions?.length > 0 && (
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                  {item.cosing.functions.map(f => FUNCTION_LABELS[f] || f).join(' \u00b7 ')}
+                </p>
+              )}
+            </div>
+            <div className="flex gap-1 flex-shrink-0 items-center flex-wrap justify-end">
+              {item.isAllergen && (
+                <span className="text-xs px-2 py-0.5 rounded-full badge-allergen">Allergen</span>
+              )}
+              {item.cosing?.eu === 'restricted' && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-400 border border-amber-800/40">EU Restricted</span>
+              )}
+              {item.cosing?.eu === 'prohibited' && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/40 text-red-400 border border-red-800/40">EU Prohibited</span>
+              )}
+              <span className={`text-xs px-2 py-0.5 rounded-full ${config.badge}`}>{config.label}</span>
+              <span aria-hidden="true" className="text-slate-600 text-xs ml-0.5">{expanded ? '\u25b2' : '\u25bc'}</span>
+            </div>
           </div>
-          <div className="flex gap-1 flex-shrink-0 items-center flex-wrap justify-end">
-            {item.isAllergen && (
-              <span className="text-xs px-2 py-0.5 rounded-full badge-allergen">Allergen</span>
-            )}
-            {item.cosing?.eu === 'restricted' && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-400 border border-amber-800/40">EU Restricted</span>
-            )}
-            {item.cosing?.eu === 'prohibited' && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/40 text-red-400 border border-red-800/40">EU Prohibited</span>
-            )}
-            <span className={`text-xs px-2 py-0.5 rounded-full ${config.badge}`}>{config.label}</span>
-            {hasDetail && (
-              <span aria-hidden="true" className="text-slate-600 text-xs ml-0.5">{expanded ? '▲' : '▼'}</span>
-            )}
-          </div>
-        </div>
+          {item.hazardScore != null && <HazardBar score={item.hazardScore} />}
+        </button>
 
-        {item.hazardScore != null && <HazardBar score={item.hazardScore} />}
-
-        {expanded && hasDetail && (
+        {expanded && (
           <div className="mt-2 flex flex-col gap-2 animate-fade-in">
             {item.concern && (
               <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/60 rounded-lg p-2.5">
@@ -132,9 +163,10 @@ export default function IngredientRow({ item }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={e => e.stopPropagation()}
-                className="text-xs text-slate-500 hover:text-brand-400 underline underline-offset-2"
+                className="text-xs text-slate-400 hover:text-brand-400 underline underline-offset-2"
               >
-                🔍 View on EU CosIng ↗
+                <span aria-hidden="true">🔍 </span>View on EU CosIng
+                <span className="sr-only"> (opens in new tab)</span>
               </a>
             )}
           </div>

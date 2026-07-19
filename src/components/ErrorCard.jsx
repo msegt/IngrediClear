@@ -1,12 +1,11 @@
 import React from 'react'
 
 export default function ErrorCard({ message, onRetry, onSwitchMode, notFoundMeta }) {
-  // notFoundMeta = { barcode, dbType } when the error is a not-found
   const isNotFound = !!(notFoundMeta || (message && (message.includes('not found') || message.includes('No '))))
   const isTimeout  = message && message.includes('timed out')
   const isNetwork  = message && message.includes('Network error')
 
-  const icon  = isNotFound ? '\uD83D\uDD0D' : isTimeout ? '\u23F1' : isNetwork ? '\uD83D\uDCE1' : '\u26A0\uFE0F'
+  const icon  = isNotFound ? '🔍' : isTimeout ? '⏱' : isNetwork ? '📡' : '⚠️'
   const title = isNotFound ? 'Product not found'
                : isTimeout  ? 'Request timed out'
                : isNetwork  ? 'Connection problem'
@@ -38,19 +37,24 @@ export default function ErrorCard({ message, onRetry, onSwitchMode, notFoundMeta
 
       {isNotFound ? (
         <div className="flex flex-col gap-2 w-full">
-          {/* Switch mode */}
           {onSwitchMode && (
-            <button onClick={onSwitchMode} className="btn-primary w-full">
+            <button
+              onClick={onSwitchMode}
+              aria-label={switchLabel}
+              className="btn-primary w-full"
+            >
               {switchLabel}
             </button>
           )}
 
-          {/* Search by name — takes user to manual tab */}
-          <button onClick={onRetry} className="w-full py-2.5 px-4 rounded-xl border border-slate-600 text-slate-300 text-sm font-medium hover:border-slate-400 hover:text-white transition">
+          <button
+            onClick={onRetry}
+            aria-label="Search for this product by name"
+            className="w-full py-2.5 px-4 rounded-xl border border-slate-600 text-slate-300 text-sm font-medium hover:border-slate-400 hover:text-white transition"
+          >
             Search by name instead
           </button>
 
-          {/* Add to community database */}
           {addUrl && (
             <a
               href={addUrl}
@@ -58,12 +62,18 @@ export default function ErrorCard({ message, onRetry, onSwitchMode, notFoundMeta
               rel="noopener noreferrer"
               className="w-full py-2.5 px-4 rounded-xl border border-brand-500/40 text-brand-400 text-sm font-medium hover:border-brand-400 hover:text-brand-300 transition text-center"
             >
-              Add this product to {addSiteName} →
+              Add this product to {addSiteName}
+              <span aria-hidden="true"> →</span>
+              <span className="sr-only"> (opens in new tab)</span>
             </a>
           )}
         </div>
       ) : (
-        <button onClick={onRetry} className="btn-primary px-8">
+        <button
+          onClick={onRetry}
+          aria-label="Try the request again"
+          className="btn-primary px-8"
+        >
           Try again
         </button>
       )}
