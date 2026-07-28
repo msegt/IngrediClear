@@ -61,7 +61,7 @@ export async function fetchFoodProduct(barcode) {
     try {
       const usda = await fetchUsdaEnrichment(product.product_name, product.brands)
       if (usda) {
-        product.nutriments   = { ...usda, ...product.nutriments }
+        product.nutriments    = { ...usda, ...product.nutriments }
         product._usdaEnriched = true
       }
     } catch {
@@ -95,7 +95,12 @@ export async function searchFoodProductsByName(query) {
 
 /**
  * Fetch up to 5 food alternatives that are healthier than the scanned product.
- * Uses the first category tag and looks for products with a strictly better Nutri-Score.
+ *
+ * The OFF v2 search API does NOT support comma-separated values for
+ * `nutriscore_grade`, so we fetch the top 20 products in the same category
+ * (sorted by nutriscore_score ascending = best first) and filter client-side
+ * for a strictly better grade than the scanned item.
+ *
  * Returns [] if the product already has grade A or has no category/grade data.
  */
 export async function fetchFoodAlternatives(categoryTag, currentGrade) {
@@ -103,22 +108,28 @@ export async function fetchFoodAlternatives(categoryTag, currentGrade) {
   const currentIndex = GRADE_ORDER.indexOf(currentGrade.toLowerCase())
   if (currentIndex <= 0) return [] // already grade A — nothing better to suggest
 
-  // Accept grades strictly better than the current one
-  const targetGrades = GRADE_ORDER.slice(0, currentIndex).join(',')
-
   const params = new URLSearchParams({
     categories_tags: categoryTag,
-    nutriscore_grade: targetGrades,
-    fields: 'code,product_name,brands,image_front_small_url,nutriscore_grade,nova_group,allergens_tags',
-    sort_by: 'nutriscore_score',
-    page_size: 5,
+    fields:          'code,product_name,brands,image_front_small_url,nutriscore_grade,nova_group,allergens_tags',
+    sort_by:         'nutriscore_score',
+    sort_order:      'asc',   // best Nutri-Score first
+    page_size:       20,      // fetch more so client-side filter has enough to work with
   })
 
   try {
     const response = await fetchWithTimeout(`${ALT_URL}?${params}`, 10000)
     if (!response.ok) return []
     const data = await response.json()
-    return (data.products || []).filter(p => p.product_name && p.product_name.trim())
+
+    return (data.products || [])
+      .filter(p => {
+        if (!p.product_name?.trim()) return false
+        const grade = p.nutriscore_grade?.toLowerCase()
+        if (!grade) return false
+        // Only include products with a strictly better grade than the scanned item
+        return GRADE_ORDER.indexOf(grade) < currentIndex
+      })
+      .slice(0, 5)
   } catch {
     return []
   }
