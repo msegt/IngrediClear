@@ -4,6 +4,8 @@ import { detectCategory, getCategoryWarnings } from '../data/categoryDetector.js
 import IngredientRow     from './IngredientRow.jsx'
 import ImageLightbox     from './ImageLightbox.jsx'
 import IngredientCapture from './IngredientCapture.jsx'
+import AlternativesList  from './AlternativesList.jsx'
+import { fetchCosmeticAlternatives } from '../api/openBeautyFacts.js'
 
 export default function ProductResult({ product, onBack }) {
   const [showAll, setShowAll]           = useState(false)
@@ -60,6 +62,11 @@ export default function ProductResult({ product, onBack }) {
   }
   const score    = scoreConfig[overallScore]
   const imageUrl = product.image_url || product.image_front_url
+
+  // Show alternatives only for harmful or caution products that have a category tag
+  const showAlternatives = hasIngredients && (overallScore === 'harmful' || overallScore === 'caution')
+  const categoryTag = (product.categories_tags || [])[0] || null
+  const currentAllergenCount = Array.isArray(product.allergens_tags) ? product.allergens_tags.length : allergens.length
 
   const handleShare = async () => {
     const text = `IngrediClear result for ${product.product_name || 'this product'}:\n${score.emoji} ${score.label}\n${scoreReason}\n\nhttps://github.com/msegt/IngrediClear`
@@ -239,6 +246,15 @@ export default function ProductResult({ product, onBack }) {
               titleEmoji="🤧"
               items={allergens}
               note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them. If you have an allergy or sensitivity to any of these, do not use this product."
+            />
+          )}
+
+          {/* Safer alternatives — shown only when product has harmful/caution ingredients */}
+          {showAlternatives && categoryTag && (
+            <AlternativesList
+              fetchAlternatives={() => fetchCosmeticAlternatives(categoryTag, currentAllergenCount)}
+              currentGrade={null}
+              type="cosmetic"
             />
           )}
 
