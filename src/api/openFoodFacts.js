@@ -9,6 +9,7 @@ import { fetchUsdaEnrichment } from './usdaFoodData.js'
 
 const BASE_URL   = 'https://world.openfoodfacts.org/api/v2/product'
 const SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl'
+const SEARCH_V2  = 'https://world.openfoodfacts.org/api/v2/search'
 
 async function fetchWithTimeout(url, ms = 8000) {
   const controller = new AbortController()
@@ -30,7 +31,7 @@ function needsEnrichment(nutriments = {}) {
 }
 
 export async function fetchFoodProduct(barcode) {
-  const url = `${BASE_URL}/${barcode}.json?fields=code,id,product_name,brands,categories,ingredients_text,image_url,image_front_url,allergens,allergens_tags,nutriments,nutriscore_grade,nova_group,labels,quantity`
+  const url = `${BASE_URL}/${barcode}.json?fields=code,id,product_name,brands,categories,categories_tags,ingredients_text,image_url,image_front_url,allergens,allergens_tags,nutriments,nutriscore_grade,nova_group,labels,quantity`
   const response = await fetchWithTimeout(url)
 
   if (response.status === 404) {
@@ -85,6 +86,41 @@ export async function searchFoodProductsByName(query) {
   try { data = await response.json() } catch { throw new Error('Unexpected response from server.') }
 
   const products = (data.products || []).filter(p => p.product_name && p.product_name.trim())
-  if (!products.length) throw new Error(`No food products found for “${query}”. Try a different name.`)
+  if (!products.length) throw new Error(`No food products found for "${query}". Try a different name.`)
   return products
+}
+
+/**
+ * Fetch healthier alternatives for a food product.
+ * Only called when the scanned product has Nutri-Score c, d, or e.
+ * Returns up to 5 products in the same OFF category with a strictly better Nutri-Score.
+ */
+export async function fetchFoodAlternatives(categoryTag, currentGrade) {
+  if (!categoryTag || !currentGrade) return []
+  const grade = currentGrade.toLowerCase()
+  // Already best possible grade — no point fetching alternatives
+  if (grade === 'a') return []
+
+  // Target grades strictly better than the current one
+  const gradeOrder = ['a', 'b', 'c', 'd', 'e']
+  const currentIndex = gradeOrder.indexOf(grade)
+  if (currentIndex <= 0) return []
+  const betterGrades = gradeOrder.slice(0, currentIndex).join(',')
+
+  const params = new URLSearchParams({
+    categories_tags: categoryTag,
+    nutriscore_grade: betterGrades,
+    fields: 'code,product_name,brands,image_front_small_url,nutriscore_grade,allergens_tags',
+    sort_by: 'nutriscore_score',
+    page_size: 5,
+  })
+
+  try {
+    const response = await fetchWithTimeout(`${SEARCH_V2}?${params}`, 6000)
+    if (!response.ok) return []
+    const data = await response.json()
+    return (data.products || []).filter(p => p.product_name && p.product_name.trim())
+  } catch {
+    return []
+  }
 }

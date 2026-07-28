@@ -5,7 +5,9 @@ import ImageLightbox from './ImageLightbox.jsx'
 import NutriScoreBadge from './NutriScoreBadge.jsx'
 import EcoScoreBadge from './EcoScoreBadge.jsx'
 import PackagingFlags from './PackagingFlags.jsx'
+import AlternativesList from './AlternativesList.jsx'
 import { addToGroceryList, removeFromGroceryList, isInGroceryList } from '../data/groceryList.js'
+import { fetchFoodAlternatives } from '../api/openFoodFacts.js'
 
 function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
@@ -154,12 +156,25 @@ function NovaBadge({ group }) {
   )
 }
 
+const NUTRISCORE_GRADE_COLORS = {
+  a: 'text-green-400',
+  b: 'text-lime-400',
+  c: 'text-yellow-400',
+  d: 'text-orange-400',
+  e: 'text-red-400',
+}
+
 export default function FoodResult({ product, onBack }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [inGroceryList, setInGroceryList] = useState(() => isInGroceryList(product.code || product.id))
   const analysis = analyseFoodProduct(product)
   const imageUrl = product.image_front_url || product.image_url
   const usdaEnriched = !!product._usdaEnriched
+
+  // Determine if alternatives are worth fetching (grade c/d/e only)
+  const nutriscoreGrade = analysis.nutriscore?.toLowerCase()
+  const shouldSuggestAlternatives = ['c', 'd', 'e'].includes(nutriscoreGrade)
+  const categoryTag = (product.categories_tags || [])[0]
 
   const handleGroceryToggle = () => {
     const barcode = product.code || product.id
@@ -218,7 +233,7 @@ export default function FoodResult({ product, onBack }) {
             inGroceryList ? 'text-emerald-400 hover:text-red-400' : 'text-slate-500 hover:text-emerald-400'
           }`}
         >
-          <span aria-hidden="true">{inGroceryList ? '\uD83D\uDED2\u2713' : '\uD83D\uDED2'}</span>
+          <span aria-hidden="true">{inGroceryList ? '🛒✓' : '🛒'}</span>
         </button>
       </div>
 
@@ -368,6 +383,17 @@ export default function FoodResult({ product, onBack }) {
             ))}
           </dl>
         </div>
+      )}
+
+      {/* Better alternatives — only shown for Nutri-Score C, D, or E */}
+      {shouldSuggestAlternatives && categoryTag && (
+        <AlternativesList
+          fetchFn={() => fetchFoodAlternatives(categoryTag, nutriscoreGrade)}
+          title="Healthier alternatives"
+          gradeLabel="Nutri-Score"
+          gradeKey="nutriscore_grade"
+          gradeColors={NUTRISCORE_GRADE_COLORS}
+        />
       )}
 
       <p className="text-center text-xs text-slate-600 px-4">
