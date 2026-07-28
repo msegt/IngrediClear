@@ -9,7 +9,6 @@ import { fetchUsdaEnrichment } from './usdaFoodData.js'
 
 const BASE_URL   = 'https://world.openfoodfacts.org/api/v2/product'
 const SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl'
-const ALT_URL    = 'https://world.openfoodfacts.org/api/v2/search'
 
 async function fetchWithTimeout(url, ms = 8000) {
   const controller = new AbortController()
@@ -96,40 +95,54 @@ export async function searchFoodProductsByName(query) {
 /**
  * Fetch up to 5 food alternatives that are healthier than the scanned product.
  *
- * The OFF v2 search API does NOT support comma-separated values for
- * `nutriscore_grade`, so we fetch the top 20 products in the same category
- * (sorted by nutriscore_score ascending = best first) and filter client-side
- * for a strictly better grade than the scanned item.
+ * Uses the /cgi/search.pl endpoint with tagtype_0/tag_0 params — this is the
+ * most reliable way to filter by a single category tag across all OFF products.
+ * The v2/search endpoint's categories_tags param behaves inconsistently as a
+ * plain string and often returns zero results.
+ *
+ * Grade logic:
+ *   - Fetches up to 50 products in the same leaf category, sorted best-first
+ *   - Filters client-side to grades strictly better than the scanned product
+ *   - If that yields < 3 results, relaxes to same-or-better grade so the
+ *     section is still useful (e.g. two grade-B products for a grade-B scan)
  *
  * Returns [] if the product already has grade A or has no category/grade data.
  */
 export async function fetchFoodAlternatives(categoryTag, currentGrade) {
   if (!categoryTag || !currentGrade) return []
   const currentIndex = GRADE_ORDER.indexOf(currentGrade.toLowerCase())
-  if (currentIndex <= 0) return [] // already grade A — nothing better to suggest
+  if (currentIndex <= 0) return [] // already grade A
 
   const params = new URLSearchParams({
-    categories_tags: categoryTag,
-    fields:          'code,product_name,brands,image_front_small_url,nutriscore_grade,nova_group,allergens_tags',
-    sort_by:         'nutriscore_score',
-    sort_order:      'asc',   // best Nutri-Score first
-    page_size:       20,      // fetch more so client-side filter has enough to work with
+    action:       'process',
+    json:         1,
+    tagtype_0:    'categories',
+    tag_contains_0: 'contains',
+    tag_0:        categoryTag,
+    sort_by:      'nutriscore_score',
+    page_size:    50,
+    fields:       'code,product_name,brands,image_front_small_url,nutriscore_grade,nova_group,allergens_tags,categories_tags',
   })
 
   try {
-    const response = await fetchWithTimeout(`${ALT_URL}?${params}`, 10000)
+    const response = await fetchWithTimeout(`${SEARCH_URL}?${params}`, 10000)
     if (!response.ok) return []
     const data = await response.json()
+    const all = (data.products || []).filter(p =>
+      p.product_name?.trim() && p.nutriscore_grade
+    )
 
-    return (data.products || [])
-      .filter(p => {
-        if (!p.product_name?.trim()) return false
-        const grade = p.nutriscore_grade?.toLowerCase()
-        if (!grade) return false
-        // Only include products with a strictly better grade than the scanned item
-        return GRADE_ORDER.indexOf(grade) < currentIndex
-      })
-      .slice(0, 5)
+    // Strictly better grade first
+    const strictly = all.filter(p =>
+      GRADE_ORDER.indexOf(p.nutriscore_grade.toLowerCase()) < currentIndex
+    )
+
+    // If fewer than 3 strictly better, relax to same-or-better
+    const candidates = strictly.length >= 3
+      ? strictly
+      : all.filter(p => GRADE_ORDER.indexOf(p.nutriscore_grade.toLowerCase()) <= currentIndex)
+
+    return candidates.slice(0, 5)
   } catch {
     return []
   }

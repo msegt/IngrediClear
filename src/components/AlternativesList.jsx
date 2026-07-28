@@ -7,8 +7,9 @@ import React, { useState, useEffect } from 'react'
  *   fetchAlternatives  – async () => Product[]   (called once on mount)
  *   currentGrade       – string | null  (used only for food, to label improvement)
  *   type               – 'food' | 'cosmetic'
+ *   onSelect           – (code: string) => void  called when a card is tapped
  */
-export default function AlternativesList({ fetchAlternatives, currentGrade, type }) {
+export default function AlternativesList({ fetchAlternatives, currentGrade, type, onSelect }) {
   const [alternatives, setAlternatives] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -29,7 +30,6 @@ export default function AlternativesList({ fetchAlternatives, currentGrade, type
     return () => { cancelled = true }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Nothing to show and not loading — don't render anything
   if (!loading && alternatives.length === 0) return null
 
   const gradeColor = (grade) => {
@@ -57,8 +57,7 @@ export default function AlternativesList({ fetchAlternatives, currentGrade, type
         aria-busy={loading}
       >
         {loading
-          ? /* Skeleton cards */
-            [1, 2, 3].map(i => (
+          ? [1, 2, 3].map(i => (
               <div
                 key={i}
                 aria-hidden="true"
@@ -68,25 +67,25 @@ export default function AlternativesList({ fetchAlternatives, currentGrade, type
           : alternatives.map(alt => {
               const grade = type === 'food' ? alt.nutriscore_grade : alt.ecoscore_grade
               const allergenCount = Array.isArray(alt.allergens_tags) ? alt.allergens_tags.length : null
+              const code = alt.code || alt.id
 
-              // Build a short "why better" reason string
               const reasons = []
               if (type === 'food' && grade && currentGrade) {
                 reasons.push(`Nutri-Score ${grade.toUpperCase()} vs ${currentGrade.toUpperCase()}`)
               }
-              if (type === 'cosmetic' && allergenCount !== null && allergenCount === 0) {
-                reasons.push('No declared allergens')
-              } else if (type === 'cosmetic' && grade) {
-                reasons.push(`Eco-Score ${grade.toUpperCase()}`)
+              if (type === 'cosmetic') {
+                if (allergenCount === 0) reasons.push('No declared allergens')
+                else if (grade)         reasons.push(`Eco-Score ${grade.toUpperCase()}`)
               }
-              if (alt.labels && alt.labels.toLowerCase().includes('organic')) reasons.push('Organic')
+              if (alt.labels?.toLowerCase().includes('organic')) reasons.push('Organic')
 
               return (
-                <div
-                  key={alt.code}
+                <button
+                  key={code}
                   role="listitem"
-                  aria-label={`${alt.product_name || 'Product'}${reasons.length ? '. ' + reasons.join(', ') : ''}`}
-                  className="flex-shrink-0 snap-start w-36 bg-slate-800/80 border border-slate-700/60 rounded-2xl p-3 flex flex-col gap-1.5 hover:border-brand-500/50 hover:bg-slate-800 transition cursor-default"
+                  onClick={() => code && onSelect && onSelect(code)}
+                  aria-label={`View full details for ${alt.product_name || 'product'}${reasons.length ? '. ' + reasons.join(', ') : ''}`}
+                  className="flex-shrink-0 snap-start w-36 bg-slate-800/80 border border-slate-700/60 rounded-2xl p-3 flex flex-col gap-1.5 hover:border-brand-500/50 hover:bg-slate-800 active:scale-95 transition text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-brand-400 focus:outline-none"
                 >
                   {alt.image_front_small_url
                     ? (
@@ -115,7 +114,9 @@ export default function AlternativesList({ fetchAlternatives, currentGrade, type
                   {reasons.length > 0 && (
                     <p className="text-[10px] text-slate-500 leading-tight">{reasons.join(' · ')}</p>
                   )}
-                </div>
+
+                  <p className="text-[10px] text-brand-400 mt-0.5">Tap to view →</p>
+                </button>
               )
             })
         }

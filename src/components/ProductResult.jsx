@@ -8,7 +8,7 @@ import AlternativesList  from './AlternativesList.jsx'
 import { fetchCosmeticAlternatives } from '../api/openBeautyFacts.js'
 import { mostSpecificCategoryTag } from '../utils/categoryUtils.js'
 
-export default function ProductResult({ product, onBack }) {
+export default function ProductResult({ product, onBack, onSelectAlternative }) {
   const [showAll, setShowAll]           = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [manualIngredients, setManualIngredients] = useState(null)
@@ -65,7 +65,6 @@ export default function ProductResult({ product, onBack }) {
   const imageUrl = product.image_url || product.image_front_url
 
   const showAlternatives = hasIngredients && (overallScore === 'harmful' || overallScore === 'caution')
-  // Use the most specific category tag to keep alternatives closely related
   const categoryTag = mostSpecificCategoryTag(product.categories_tags)
   const currentAllergenCount = Array.isArray(product.allergens_tags) ? product.allergens_tags.length : allergens.length
 
@@ -82,43 +81,29 @@ export default function ProductResult({ product, onBack }) {
   return (
     <div className="flex flex-col gap-4 pb-8">
       {lightboxOpen && imageUrl && (
-        <ImageLightbox
-          src={imageUrl}
-          alt={product.product_name || 'Product image'}
-          onClose={() => setLightboxOpen(false)}
-        />
+        <ImageLightbox src={imageUrl} alt={product.product_name || 'Product image'}
+          onClose={() => setLightboxOpen(false)} />
       )}
 
       <div className="flex items-center justify-between">
-        <button
-          onClick={onBack}
-          aria-label="Scan another product"
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium"
-        >
+        <button onClick={onBack} aria-label="Scan another product"
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium">
           <span aria-hidden="true">←</span> Scan another
         </button>
-        <button
-          onClick={handleShare}
-          aria-label="Share this result"
-          className="flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300 transition font-medium"
-        >
+        <button onClick={handleShare} aria-label="Share this result"
+          className="flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300 transition font-medium">
           <span aria-hidden="true">↑</span> Share
         </button>
       </div>
 
       <div className="card p-4 flex gap-4 items-start">
         {imageUrl && (
-          <button
-            onClick={() => setLightboxOpen(true)}
+          <button onClick={() => setLightboxOpen(true)}
             aria-label={`View full-size image of ${product.product_name || 'product'}`}
-            className="relative flex-shrink-0 rounded-xl overflow-hidden group focus-visible:ring-2 focus-visible:ring-brand-400"
-          >
-            <img
-              src={imageUrl}
-              alt={product.product_name || 'Product'}
+            className="relative flex-shrink-0 rounded-xl overflow-hidden group focus-visible:ring-2 focus-visible:ring-brand-400">
+            <img src={imageUrl} alt={product.product_name || 'Product'}
               className="w-20 h-20 object-contain bg-slate-800 transition group-hover:brightness-75"
-              onError={e => e.target.parentElement.style.display = 'none'}
-            />
+              onError={e => e.target.parentElement.style.display = 'none'} />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition pointer-events-none">
               <span className="text-white text-xl drop-shadow-lg" aria-hidden="true">🔍</span>
             </div>
@@ -158,16 +143,11 @@ export default function ProductResult({ product, onBack }) {
               </p>
             </div>
           </div>
-
           <IngredientCapture onAnalyse={(text) => setManualIngredients(text)} />
-
           {product.id && product._source !== 'upcitemdb' && product._source !== 'manual' && (
-            <a
-              href={`https://world.openbeautyfacts.org/product/${product.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-center text-xs text-slate-400 hover:text-brand-400 transition underline underline-offset-2"
-            >
+            <a href={`https://world.openbeautyfacts.org/product/${product.id}`}
+              target="_blank" rel="noopener noreferrer"
+              className="text-center text-xs text-slate-400 hover:text-brand-400 transition underline underline-offset-2">
               Also add these ingredients to Open Beauty Facts to help others
               <span aria-hidden="true"> →</span>
             </a>
@@ -183,21 +163,14 @@ export default function ProductResult({ product, onBack }) {
               <p className="text-xs text-brand-300 leading-relaxed flex-1">
                 Analysis based on ingredients you entered — not from the product database.
               </p>
-              <button
-                onClick={() => setManualIngredients(null)}
+              <button onClick={() => setManualIngredients(null)}
                 className="text-xs text-slate-400 hover:text-white transition flex-shrink-0"
-                aria-label="Clear manually entered ingredients"
-              >
-                Clear
-              </button>
+                aria-label="Clear manually entered ingredients">Clear</button>
             </div>
           )}
 
-          <div
-            className={`card p-4 border ${score.bg} flex items-center gap-4`}
-            role="status"
-            aria-label={`Overall result: ${score.label}. ${scoreReason}`}
-          >
+          <div className={`card p-4 border ${score.bg} flex items-center gap-4`}
+            role="status" aria-label={`Overall result: ${score.label}. ${scoreReason}`}>
             <span className="text-4xl" aria-hidden="true">{score.emoji}</span>
             <div className="flex-1 min-w-0">
               <p className={`font-bold text-lg ${score.color}`} aria-hidden="true">{score.label}</p>
@@ -212,12 +185,9 @@ export default function ProductResult({ product, onBack }) {
               { label: 'Caution',   count: caution.length,  color: 'text-yellow-400  bg-yellow-500/10 border-yellow-500/20'   },
               { label: 'Safe',      count: safe.length,     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
             ].map(s => (
-              <div
-                key={s.label}
-                role="listitem"
+              <div key={s.label} role="listitem"
                 aria-label={`${s.count} ${s.label.toLowerCase()} ingredient${s.count !== 1 ? 's' : ''}`}
-                className={`border rounded-xl p-2.5 text-center ${s.color}`}
-              >
+                className={`border rounded-xl p-2.5 text-center ${s.color}`}>
                 <div className="text-xl font-bold" aria-hidden="true">{s.count}</div>
                 <div className="text-xs mt-0.5 opacity-80" aria-hidden="true">{s.label}</div>
               </div>
@@ -236,12 +206,8 @@ export default function ProductResult({ product, onBack }) {
           {harmful.length > 0   && <IngredientSection title="Harmful Ingredients"       titleEmoji="🚫" items={harmful} />}
           {caution.length > 0   && <IngredientSection title="Use with Caution"          titleEmoji="⚠️" items={caution} />}
           {allergens.length > 0 && (
-            <IngredientSection
-              title="Fragrance Allergens Detected"
-              titleEmoji="🤧"
-              items={allergens}
-              note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them."
-            />
+            <IngredientSection title="Fragrance Allergens Detected" titleEmoji="🤧" items={allergens}
+              note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them." />
           )}
 
           {showAlternatives && categoryTag && (
@@ -249,17 +215,15 @@ export default function ProductResult({ product, onBack }) {
               fetchAlternatives={() => fetchCosmeticAlternatives(categoryTag, currentAllergenCount)}
               currentGrade={null}
               type="cosmetic"
+              onSelect={onSelectAlternative}
             />
           )}
 
           {(safe.length > 0 || unknown.length > 0) && (
             <div className="card">
-              <button
-                onClick={() => setShowAll(v => !v)}
+              <button onClick={() => setShowAll(v => !v)}
                 className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-400 hover:text-white transition"
-                aria-expanded={showAll}
-                aria-controls="safe-unclassified-list"
-              >
+                aria-expanded={showAll} aria-controls="safe-unclassified-list">
                 <span><span aria-hidden="true">✅</span> Safe &amp; unclassified ({safe.length + unknown.length})</span>
                 <span className="text-xs" aria-hidden="true">{showAll ? '▲ Hide' : '▼ Show'}</span>
               </button>

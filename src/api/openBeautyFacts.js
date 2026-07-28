@@ -14,7 +14,6 @@ import { fetchUpcProduct }  from './upcItemDb.js'
 
 const BASE_URL   = 'https://world.openbeautyfacts.org/api/v2/product'
 const SEARCH_URL = 'https://world.openbeautyfacts.org/cgi/search.pl'
-const ALT_URL    = 'https://world.openbeautyfacts.org/api/v2/search'
 
 async function fetchWithTimeout(url, ms = 8000) {
   const controller = new AbortController()
@@ -31,7 +30,6 @@ async function fetchWithTimeout(url, ms = 8000) {
 }
 
 export async function fetchProduct(barcode) {
-  // ── 1+2. OBF and OFF in parallel ───────────────────────────────────────
   const [obfResult, offResult] = await Promise.allSettled([
     _fetchFromOBF(barcode),
     fetchFoodProduct(barcode)
@@ -45,7 +43,6 @@ export async function fetchProduct(barcode) {
   if (!obfErr.notFound) throw obfErr
   if (!offErr.notFound) throw offErr
 
-  // ── 3. EAN DB fallback ───────────────────────────────────────────────
   try {
     const product = await fetchUpcProduct(barcode)
     return { ...product, _fallback: true }
@@ -53,7 +50,6 @@ export async function fetchProduct(barcode) {
     if (!eanErr.notFound) throw eanErr
   }
 
-  // ── All three failed ──────────────────────────────────────────────────
   throw Object.assign(
     new Error('Product not found. Try searching by name or paste the ingredient list.'),
     { notFound: true, barcode, dbType: 'beauty' }
@@ -101,44 +97,49 @@ export async function searchProductsByName(query) {
 
 /**
  * Fetch up to 5 cosmetic alternatives that are safer than the scanned product.
- * Uses the first category tag and looks for products with fewer allergens_tags.
- * Falls back to any in-category results when allergen data is sparse.
+ *
+ * Uses the same /cgi/search.pl + tagtype_0/tag_0 pattern as fetchFoodAlternatives
+ * for reliable category filtering.
+ *
+ * Ranking:
+ *   1. Products with strictly fewer allergens_tags than the scanned item
+ *   2. Within that, sorted by ecoscore_grade ascending (a = best)
+ *   3. Falls back to all in-category products if fewer than 3 pass the allergen filter
+ *
  * Returns [] if no category tag is available.
  */
 export async function fetchCosmeticAlternatives(categoryTag, currentAllergenCount) {
   if (!categoryTag) return []
 
   const params = new URLSearchParams({
-    categories_tags: categoryTag,
-    fields: 'code,product_name,brands,image_front_small_url,allergens_tags,ecoscore_grade,labels',
-    sort_by: 'popularity',
-    page_size: 20, // fetch more so we can filter client-side
+    action:           'process',
+    json:             1,
+    tagtype_0:        'categories',
+    tag_contains_0:   'contains',
+    tag_0:            categoryTag,
+    sort_by:          'popularity',
+    page_size:        50,
+    fields:           'code,product_name,brands,image_front_small_url,allergens_tags,ecoscore_grade,labels',
   })
 
   try {
-    const response = await fetchWithTimeout(`${ALT_URL}?${params}`, 10000)
+    const response = await fetchWithTimeout(`${SEARCH_URL}?${params}`, 10000)
     if (!response.ok) return []
     const data = await response.json()
-    const all = (data.products || []).filter(p => p.product_name && p.product_name.trim())
+    const all = (data.products || []).filter(p => p.product_name?.trim())
 
-    // Prefer products with strictly fewer allergens than the scanned item
-    const better = all.filter(p => {
-      const count = Array.isArray(p.allergens_tags) ? p.allergens_tags.length : 0
-      return count < currentAllergenCount
-    })
+    const allergenCount = (p) => Array.isArray(p.allergens_tags) ? p.allergens_tags.length : 0
 
-    // If too few results, fall back to same-category products sorted by eco score
+    // Prefer strictly fewer allergens
+    const better = all.filter(p => allergenCount(p) < currentAllergenCount)
     const candidates = better.length >= 3 ? better : all
 
-    // Sort: ecoscore a > b > c > d > e > unknown, then fewest allergens
     const GRADES = ['a', 'b', 'c', 'd', 'e']
     candidates.sort((x, y) => {
       const gi = GRADES.indexOf((x.ecoscore_grade || 'e').toLowerCase())
       const gj = GRADES.indexOf((y.ecoscore_grade || 'e').toLowerCase())
       if (gi !== gj) return gi - gj
-      const ai = Array.isArray(x.allergens_tags) ? x.allergens_tags.length : 0
-      const aj = Array.isArray(y.allergens_tags) ? y.allergens_tags.length : 0
-      return ai - aj
+      return allergenCount(x) - allergenCount(y)
     })
 
     return candidates.slice(0, 5)
