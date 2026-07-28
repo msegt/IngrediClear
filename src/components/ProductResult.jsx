@@ -6,6 +6,7 @@ import ImageLightbox     from './ImageLightbox.jsx'
 import IngredientCapture from './IngredientCapture.jsx'
 import AlternativesList  from './AlternativesList.jsx'
 import { fetchCosmeticAlternatives } from '../api/openBeautyFacts.js'
+import { mostSpecificCategoryTag } from '../utils/categoryUtils.js'
 
 export default function ProductResult({ product, onBack }) {
   const [showAll, setShowAll]           = useState(false)
@@ -46,7 +47,7 @@ export default function ProductResult({ product, onBack }) {
     if (overallScore === 'caution')
       return `${caution.length} ingredient${caution.length > 1 ? 's' : ''} with a use-with-caution flag. See details below.`
     const allergenNote = allergens.length > 0
-      ? ` Contains ${allergens.length} EU-listed fragrance allergen${allergens.length > 1 ? 's' : ''} — safe for most people, but avoid if you have a sensitivity to ${allergens.length > 1 ? 'these ingredients' : 'this ingredient'}.`
+      ? ` Contains ${allergens.length} EU-listed fragrance allergen${allergens.length > 1 ? 's' : ''} — safe for most people, but avoid if you have a known sensitivity.`
       : ''
     const unknownNote = unknown.length > 0
       ? ` ${unknown.length} ingredient${unknown.length > 1 ? 's' : ''} were not in our database and could not be assessed.`
@@ -63,9 +64,9 @@ export default function ProductResult({ product, onBack }) {
   const score    = scoreConfig[overallScore]
   const imageUrl = product.image_url || product.image_front_url
 
-  // Show alternatives only for harmful or caution products that have a category tag
   const showAlternatives = hasIngredients && (overallScore === 'harmful' || overallScore === 'caution')
-  const categoryTag = (product.categories_tags || [])[0] || null
+  // Use the most specific category tag to keep alternatives closely related
+  const categoryTag = mostSpecificCategoryTag(product.categories_tags)
   const currentAllergenCount = Array.isArray(product.allergens_tags) ? product.allergens_tags.length : allergens.length
 
   const handleShare = async () => {
@@ -105,7 +106,6 @@ export default function ProductResult({ product, onBack }) {
         </button>
       </div>
 
-      {/* Product header */}
       <div className="card p-4 flex gap-4 items-start">
         {imageUrl && (
           <button
@@ -135,7 +135,6 @@ export default function ProductResult({ product, onBack }) {
         </div>
       </div>
 
-      {/* Category-specific warnings */}
       {categoryWarnings.length > 0 && (
         <div className="card p-4 border border-blue-500/30 bg-blue-500/10">
           <p className="text-xs font-semibold text-blue-400 mb-2"><span aria-hidden="true">📋</span> {category} — What to watch for</p>
@@ -147,7 +146,6 @@ export default function ProductResult({ product, onBack }) {
         </div>
       )}
 
-      {/* No-ingredients capture prompt */}
       {!hasIngredients && (
         <div className="flex flex-col gap-4">
           <div className="card p-4 border border-amber-500/30 bg-amber-500/10 flex gap-3 items-start">
@@ -177,7 +175,6 @@ export default function ProductResult({ product, onBack }) {
         </div>
       )}
 
-      {/* Everything below only renders once we have ingredients */}
       {hasIngredients && (
         <>
           {manualIngredients && (
@@ -196,7 +193,6 @@ export default function ProductResult({ product, onBack }) {
             </div>
           )}
 
-          {/* Overall score */}
           <div
             className={`card p-4 border ${score.bg} flex items-center gap-4`}
             role="status"
@@ -209,7 +205,6 @@ export default function ProductResult({ product, onBack }) {
             </div>
           </div>
 
-          {/* Stat pills */}
           <div className="grid grid-cols-4 gap-2" role="list" aria-label="Ingredient summary">
             {[
               { label: 'Harmful',   count: harmful.length,  color: 'text-red-400     bg-red-500/10    border-red-500/20'      },
@@ -245,11 +240,10 @@ export default function ProductResult({ product, onBack }) {
               title="Fragrance Allergens Detected"
               titleEmoji="🤧"
               items={allergens}
-              note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them. If you have an allergy or sensitivity to any of these, do not use this product."
+              note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them."
             />
           )}
 
-          {/* Safer alternatives — shown only when product has harmful/caution ingredients */}
           {showAlternatives && categoryTag && (
             <AlternativesList
               fetchAlternatives={() => fetchCosmeticAlternatives(categoryTag, currentAllergenCount)}

@@ -8,6 +8,7 @@ import PackagingFlags from './PackagingFlags.jsx'
 import AlternativesList from './AlternativesList.jsx'
 import { addToGroceryList, removeFromGroceryList, isInGroceryList } from '../data/groceryList.js'
 import { fetchFoodAlternatives } from '../api/openFoodFacts.js'
+import { mostSpecificCategoryTag } from '../utils/categoryUtils.js'
 
 function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
@@ -64,7 +65,6 @@ function UsdaTooltip() {
   )
 }
 
-// Official NOVA colours used by Open Food Facts / Santé publique France
 const NOVA_COLORS = {
   1: { bg: '#1d8348', text: '#ffffff', ring: '#1d8348' },
   2: { bg: '#58b55e', text: '#ffffff', ring: '#58b55e' },
@@ -84,7 +84,6 @@ function NovaBadge({ group }) {
   const tipRef = useRef(null)
   const num = parseInt(group, 10)
   if (!num || !NOVA_INFO[num]) return null
-
   const color = NOVA_COLORS[num]
 
   useEffect(() => {
@@ -192,10 +191,10 @@ export default function FoodResult({ product, onBack }) {
     { label: 'Salt',     value: analysis.nutrients.salt,          unit: 'g/100g' },
   ].filter(item => item.value !== null && item.value !== undefined)
 
-  // Only show alternatives if Nutri-Score is B or worse
   const nutriscoreGrade = analysis.nutriscore
   const showAlternatives = nutriscoreGrade && ['b', 'c', 'd', 'e'].includes(nutriscoreGrade.toLowerCase())
-  const categoryTag = (product.categories_tags || [])[0] || null
+  // Use the most specific category tag to keep alternatives closely related
+  const categoryTag = mostSpecificCategoryTag(product.categories_tags)
 
   return (
     <div className="flex flex-col gap-4 pb-8">
@@ -252,12 +251,8 @@ export default function FoodResult({ product, onBack }) {
           {product.brands && <p className="text-sm text-slate-400 mt-0.5">{product.brands}</p>}
           {product.categories && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{product.categories}</p>}
           <div className="flex flex-wrap items-end gap-4 mt-3">
-            {analysis.nutriscore && (
-              <NutriScoreBadge grade={analysis.nutriscore} />
-            )}
-            {analysis.novaGroup && (
-              <NovaBadge group={analysis.novaGroup} />
-            )}
+            {analysis.nutriscore && <NutriScoreBadge grade={analysis.nutriscore} />}
+            {analysis.novaGroup  && <NovaBadge group={analysis.novaGroup} />}
             <EcoScoreBadge grade={product.ecoscore_grade} />
           </div>
         </div>
