@@ -94,11 +94,12 @@ export async function searchFoodProductsByName(query) {
 /**
  * Fetch up to 5 food alternatives.
  *
- * Three-tier strategy:
- *   1. Category tag filter  (tagtype_0/tag_0) when tag + strategy='category'
+ * Four-tier strategy:
+ *   1. Category tag filter  (tagtype_0/tag_0) when strategy='category'
  *   2. Free-text name search (search_terms)   when strategy='name'
+ *   3. Ingredient keyword search              when strategy='ingredient'
  *
- * In both cases we rank by nutriscore and return at most 5 results that are
+ * In all cases we rank by nutriscore and return at most 5 results that are
  * strictly better grade than the scanned product.  If fewer than 3 pass the
  * strict filter we relax to same-or-better so the section stays useful.
  *
@@ -127,7 +128,7 @@ export async function fetchFoodAlternatives({ tag, strategy }, currentGrade, sca
       fields:           RESULT_FIELDS,
     })
   } else {
-    // strategy === 'name': free-text search, then sort client-side
+    // strategy === 'name' or strategy === 'ingredient': free-text search
     params = new URLSearchParams({
       search_terms:  tag,
       search_simple: 1,
@@ -156,7 +157,7 @@ export async function fetchFoodAlternatives({ tag, strategy }, currentGrade, sca
       : graded.filter(p => GRADE_ORDER.indexOf(p.nutriscore_grade.toLowerCase()) <= currentIndex)
 
     // If no graded candidates at all, fall back to any named product
-    if (candidates.length === 0 && strategy === 'name') return all.slice(0, 5)
+    if (candidates.length === 0 && (strategy === 'name' || strategy === 'ingredient')) return all.slice(0, 5)
 
     return candidates.slice(0, 5)
   } catch {

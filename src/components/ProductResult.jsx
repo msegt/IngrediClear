@@ -6,7 +6,7 @@ import ImageLightbox     from './ImageLightbox.jsx'
 import IngredientCapture from './IngredientCapture.jsx'
 import AlternativesList  from './AlternativesList.jsx'
 import { fetchCosmeticAlternatives } from '../api/openBeautyFacts.js'
-import { getAlternativeAnchor } from '../utils/categoryUtils.js'
+import { getAlternativeAnchor, hasUsableAnchor } from '../utils/categoryUtils.js'
 
 export default function ProductResult({ product, onBack, onSelectAlternative }) {
   const [showAll, setShowAll]           = useState(false)
@@ -64,6 +64,9 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
   const score    = scoreConfig[overallScore]
   const imageUrl = product.image_url || product.image_front_url
 
+  // Show alternatives for harmful/caution products regardless of whether a
+  // formal category is assigned — Tier 4 of getAlternativeAnchor will derive
+  // a search anchor from the ingredient list itself if nothing else is available.
   const showAlternatives = hasIngredients && (overallScore === 'harmful' || overallScore === 'caution')
   const anchor = getAlternativeAnchor(product, 'cosmetic')
   const currentAllergenCount = Array.isArray(product.allergens_tags) ? product.allergens_tags.length : allergens.length
@@ -211,7 +214,7 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
               note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them." />
           )}
 
-          {showAlternatives && anchor.tag && (
+          {showAlternatives && hasUsableAnchor(anchor) && (
             <AlternativesList
               fetchAlternatives={() => fetchCosmeticAlternatives(anchor, currentAllergenCount, scannedBarcode)}
               currentGrade={null}

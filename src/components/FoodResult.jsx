@@ -8,7 +8,7 @@ import PackagingFlags from './PackagingFlags.jsx'
 import AlternativesList from './AlternativesList.jsx'
 import { addToGroceryList, removeFromGroceryList, isInGroceryList } from '../data/groceryList.js'
 import { fetchFoodAlternatives } from '../api/openFoodFacts.js'
-import { getAlternativeAnchor } from '../utils/categoryUtils.js'
+import { getAlternativeAnchor, hasUsableAnchor } from '../utils/categoryUtils.js'
 
 function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
@@ -149,9 +149,11 @@ export default function FoodResult({ product, onBack, onSelectAlternative }) {
   ].filter(item => item.value !== null && item.value !== undefined)
 
   const nutriscoreGrade = analysis.nutriscore
-  // Show alternatives unless grade A — even if no grade, try (treated as worst case)
   const anchor = getAlternativeAnchor(product, 'food')
-  const showAlternatives = anchor.tag !== null && nutriscoreGrade !== 'a'
+  // Show alternatives when we have any anchor and the grade warrants it.
+  // hasUsableAnchor covers all 4 tiers — even ingredient-only products
+  // with no categories or recognisable name get a shot at alternatives.
+  const showAlternatives = hasUsableAnchor(anchor) && nutriscoreGrade !== 'a'
   const scannedBarcode = product.code || product.id
 
   return (

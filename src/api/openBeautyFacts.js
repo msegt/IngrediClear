@@ -95,9 +95,10 @@ export async function searchProductsByName(query) {
 /**
  * Fetch up to 5 cosmetic alternatives.
  *
- * Three-tier strategy (same pattern as fetchFoodAlternatives):
+ * Four-tier strategy (mirrors fetchFoodAlternatives):
  *   1. Category tag filter  when strategy='category'
  *   2. Free-text name search when strategy='name'
+ *   3. Ingredient keyword search when strategy='ingredient'
  *
  * Ranking: fewer allergens first, then ecoscore_grade ascending.
  * The scanned product's own barcode is excluded.
@@ -121,6 +122,7 @@ export async function fetchCosmeticAlternatives({ tag, strategy }, currentAllerg
       fields:           RESULT_FIELDS,
     })
   } else {
+    // strategy === 'name' or strategy === 'ingredient': free-text search
     params = new URLSearchParams({
       search_terms:  tag,
       search_simple: 1,

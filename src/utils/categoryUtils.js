@@ -1,19 +1,28 @@
 /**
  * Category tag utilities for Open Food Facts / Open Beauty Facts.
  *
- * Provides a 3-tier strategy so alternatives can always be fetched,
- * even when a product has no categories_tags at all:
+ * Provides a 4-tier strategy so alternatives can always be fetched,
+ * even when a product has no categories_tags, no recognisable name,
+ * and a minimal product record:
  *
  *   Tier 1 – mostSpecificCategoryTag:  use the longest/most-specific tag in
  *             the existing categories_tags array (original behaviour).
  *
  *   Tier 2 – inferCategoryTagFromName: map the product_name / brands string
  *             to a known canonical OFF/OBF category tag via a keyword lookup.
- *             Falls back gracefully to null.
  *
- *   Tier 3 – handled by the caller: do a free-text search_terms query using
- *             the product name instead of a category filter.  See the
- *             fetchFoodAlternatives / fetchCosmeticAlternatives functions.
+ *   Tier 3 – free-text search using product name (handled by caller).
+ *
+ *   Tier 4 – ingredient-keyword fallback: scan the first few items in
+ *             ingredients_text and map them to a category tag.  This fires
+ *             for products with completely missing metadata but a populated
+ *             ingredient list — e.g. a freshly-added barcode that has no
+ *             categories or a recognisable product name yet.
+ *
+ * The exported `getAlternativeAnchor` always returns a non-null { tag,
+ * strategy } pair (Tier 4 guarantees a last-resort result as long as any
+ * text is available on the product record).  Use `hasUsableAnchor` to
+ * check whether the anchor is actionable before rendering the section.
  */
 
 // ── Tier 1 ───────────────────────────────────────────────────────────────────
@@ -111,13 +120,71 @@ export function inferCategoryTagFromName(text, type) {
   return null
 }
 
+// ── Tier 4 ───────────────────────────────────────────────────────────────────
+
+/**
+ * Cosmetic ingredient keywords → canonical OBF category tag.
+ * Matches against the first ~5 ingredients in the ingredient list.
+ * Ingredients at the top are the highest concentration and most
+ * diagnostic of product type.
+ */
+const INGREDIENT_CATEGORY_MAP = [
+  // Food
+  { keywords: ['wheat flour', 'flour', 'oat', 'barley', 'rye'],    foodTag: 'en:breads' },
+  { keywords: ['sugar', 'glucose', 'fructose', 'corn syrup'],       foodTag: 'en:sweeteners' },
+  { keywords: ['cocoa', 'cacao', 'cocoa butter', 'cocoa mass'],      foodTag: 'en:chocolates' },
+  { keywords: ['milk', 'skimmed milk', 'whole milk', 'milk powder'], foodTag: 'en:dairy-products' },
+  { keywords: ['tomato', 'tomato purée', 'tomato paste'],           foodTag: 'en:sauces' },
+  { keywords: ['palm oil', 'sunflower oil', 'rapeseed oil', 'soybean oil', 'vegetable oil'], foodTag: 'en:oils' },
+  { keywords: ['water', 'carbonated water', 'sparkling water'],     foodTag: 'en:waters' },
+  { keywords: ['rice', 'rice flour'],                               foodTag: 'en:rices' },
+  { keywords: ['soya', 'soy', 'tofu', 'edamame'],                   foodTag: 'en:plant-based-foods' },
+  // Cosmetics
+  { keywords: ['aqua', 'water', 'purified water', 'deionized water'], cosmeticTag: 'en:moisturisers' },
+  { keywords: ['sodium lauryl sulfate', 'sodium laureth sulfate', 'sls', 'sles', 'cocamidopropyl betaine'], cosmeticTag: 'en:shampoos' },
+  { keywords: ['titanium dioxide', 'zinc oxide', 'avobenzone', 'octocrylene', 'homosalate'], cosmeticTag: 'en:sun-protection-products' },
+  { keywords: ['aluminum chlorohydrate', 'aluminium chlorohydrate', 'triclosan'], cosmeticTag: 'en:deodorants' },
+  { keywords: ['fluoride', 'sodium fluoride', 'silica', 'sorbitol', 'sodium bicarbonate'], cosmeticTag: 'en:toothpastes' },
+  { keywords: ['retinol', 'retinyl palmitate', 'hyaluronic acid', 'niacinamide', 'glycerin', 'ceramide'], cosmeticTag: 'en:serums' },
+  { keywords: ['fragrance', 'parfum', 'alcohol denat', 'benzyl alcohol'], cosmeticTag: 'en:perfumes' },
+  { keywords: ['pigment', 'mica', 'iron oxide', 'talc', 'ci 77'], cosmeticTag: 'en:foundations' },
+  { keywords: ['carnauba wax', 'beeswax', 'candelilla wax'],        cosmeticTag: 'en:lipsticks' },
+  { keywords: ['hydrogen peroxide', 'p-phenylenediamine', 'resorcinol'], cosmeticTag: 'en:hair-dyes' },
+]
+
+/**
+ * Infer a category tag from the first 5 ingredients of an ingredient list.
+ * @param {string} ingredientsText
+ * @param {'food'|'cosmetic'} type
+ * @returns {string|null}
+ */
+function inferCategoryTagFromIngredients(ingredientsText, type) {
+  if (!ingredientsText) return null
+  // Take the first ~5 ingredient tokens (comma-separated)
+  const firstFive = ingredientsText
+    .split(',')
+    .slice(0, 5)
+    .map(s => s.trim().toLowerCase())
+    .join(' ')
+  const field = type === 'food' ? 'foodTag' : 'cosmeticTag'
+  for (const entry of INGREDIENT_CATEGORY_MAP) {
+    if (!entry[field]) continue
+    if (entry.keywords.some(kw => firstFive.includes(kw.toLowerCase()))) return entry[field]
+  }
+  return null
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+
 /**
  * Derive the best search anchor for alternatives.
  *
  * Returns { tag, strategy } where strategy is one of:
- *   'category'   – use tag as a category filter  (tier 1 or 2)
- *   'name'       – use tag as a search_terms query (tier 3)
- *   null         – no useful anchor found
+ *   'category'    – use tag as a category filter  (tier 1 or 2)
+ *   'name'        – use tag as a search_terms query (tier 3)
+ *   'ingredient'  – use tag as a search_terms query derived from top
+ *                   ingredient keywords (tier 4)
+ *   null          – no usable anchor (product has no data at all)
  *
  * @param {object} product  – raw OFF/OBF product object
  * @param {'food'|'cosmetic'} type
@@ -136,5 +203,24 @@ export function getAlternativeAnchor(product, type) {
   const name = (product.product_name || '').trim()
   if (name.length >= 3) return { tag: name, strategy: 'name' }
 
+  // Tier 4: infer from ingredient list keywords
+  const ingredientsText = product.ingredients_text || ''
+  const ingredientInferred = inferCategoryTagFromIngredients(ingredientsText, type)
+  if (ingredientInferred) return { tag: ingredientInferred, strategy: 'category' }
+
+  // Tier 4 fallback: use the first ingredient as a free-text search term
+  const firstIngredient = ingredientsText.split(',')[0]?.trim()
+  if (firstIngredient && firstIngredient.length >= 3) {
+    return { tag: firstIngredient, strategy: 'ingredient' }
+  }
+
   return { tag: null, strategy: null }
+}
+
+/**
+ * Returns true if the anchor has enough information to attempt fetching
+ * alternatives. Use this instead of checking `anchor.tag !== null` directly.
+ */
+export function hasUsableAnchor(anchor) {
+  return anchor.tag !== null && anchor.strategy !== null
 }
