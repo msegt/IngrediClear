@@ -8,7 +8,7 @@ import PackagingFlags from './PackagingFlags.jsx'
 import AlternativesList from './AlternativesList.jsx'
 import { addToGroceryList, removeFromGroceryList, isInGroceryList } from '../data/groceryList.js'
 import { fetchFoodAlternatives } from '../api/openFoodFacts.js'
-import { mostSpecificCategoryTag } from '../utils/categoryUtils.js'
+import { getAlternativeAnchor } from '../utils/categoryUtils.js'
 
 function SourceLinks({ sources }) {
   if (!sources || sources.length === 0) return null
@@ -149,8 +149,10 @@ export default function FoodResult({ product, onBack, onSelectAlternative }) {
   ].filter(item => item.value !== null && item.value !== undefined)
 
   const nutriscoreGrade = analysis.nutriscore
-  const showAlternatives = nutriscoreGrade && ['b', 'c', 'd', 'e'].includes(nutriscoreGrade.toLowerCase())
-  const categoryTag = mostSpecificCategoryTag(product.categories_tags)
+  // Show alternatives unless grade A — even if no grade, try (treated as worst case)
+  const anchor = getAlternativeAnchor(product, 'food')
+  const showAlternatives = anchor.tag !== null && nutriscoreGrade !== 'a'
+  const scannedBarcode = product.code || product.id
 
   return (
     <div className="flex flex-col gap-4 pb-8">
@@ -310,12 +312,13 @@ export default function FoodResult({ product, onBack, onSelectAlternative }) {
         </div>
       )}
 
-      {showAlternatives && categoryTag && (
+      {showAlternatives && (
         <AlternativesList
-          fetchAlternatives={() => fetchFoodAlternatives(categoryTag, nutriscoreGrade)}
+          fetchAlternatives={() => fetchFoodAlternatives(anchor, nutriscoreGrade, scannedBarcode)}
           currentGrade={nutriscoreGrade}
           type="food"
           onSelect={onSelectAlternative}
+          strategy={anchor.strategy}
         />
       )}
 

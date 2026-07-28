@@ -6,7 +6,7 @@ import ImageLightbox     from './ImageLightbox.jsx'
 import IngredientCapture from './IngredientCapture.jsx'
 import AlternativesList  from './AlternativesList.jsx'
 import { fetchCosmeticAlternatives } from '../api/openBeautyFacts.js'
-import { mostSpecificCategoryTag } from '../utils/categoryUtils.js'
+import { getAlternativeAnchor } from '../utils/categoryUtils.js'
 
 export default function ProductResult({ product, onBack, onSelectAlternative }) {
   const [showAll, setShowAll]           = useState(false)
@@ -65,8 +65,9 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
   const imageUrl = product.image_url || product.image_front_url
 
   const showAlternatives = hasIngredients && (overallScore === 'harmful' || overallScore === 'caution')
-  const categoryTag = mostSpecificCategoryTag(product.categories_tags)
+  const anchor = getAlternativeAnchor(product, 'cosmetic')
   const currentAllergenCount = Array.isArray(product.allergens_tags) ? product.allergens_tags.length : allergens.length
+  const scannedBarcode = product.code || product.id
 
   const handleShare = async () => {
     const text = `IngrediClear result for ${product.product_name || 'this product'}:\n${score.emoji} ${score.label}\n${scoreReason}\n\nhttps://github.com/msegt/IngrediClear`
@@ -210,12 +211,13 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
               note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them." />
           )}
 
-          {showAlternatives && categoryTag && (
+          {showAlternatives && anchor.tag && (
             <AlternativesList
-              fetchAlternatives={() => fetchCosmeticAlternatives(categoryTag, currentAllergenCount)}
+              fetchAlternatives={() => fetchCosmeticAlternatives(anchor, currentAllergenCount, scannedBarcode)}
               currentGrade={null}
               type="cosmetic"
               onSelect={onSelectAlternative}
+              strategy={anchor.strategy}
             />
           )}
 

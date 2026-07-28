@@ -29,7 +29,6 @@ function needsEnrichment(nutriments = {}) {
   return key_fields.filter(f => nutriments[f] == null).length >= 3
 }
 
-// Grade order for comparison (lower index = better)
 const GRADE_ORDER = ['a', 'b', 'c', 'd', 'e']
 
 export async function fetchFoodProduct(barcode) {
@@ -93,54 +92,71 @@ export async function searchFoodProductsByName(query) {
 }
 
 /**
- * Fetch up to 5 food alternatives that are healthier than the scanned product.
+ * Fetch up to 5 food alternatives.
  *
- * Uses the /cgi/search.pl endpoint with tagtype_0/tag_0 params — this is the
- * most reliable way to filter by a single category tag across all OFF products.
- * The v2/search endpoint's categories_tags param behaves inconsistently as a
- * plain string and often returns zero results.
+ * Three-tier strategy:
+ *   1. Category tag filter  (tagtype_0/tag_0) when tag + strategy='category'
+ *   2. Free-text name search (search_terms)   when strategy='name'
  *
- * Grade logic:
- *   - Fetches up to 50 products in the same leaf category, sorted best-first
- *   - Filters client-side to grades strictly better than the scanned product
- *   - If that yields < 3 results, relaxes to same-or-better grade so the
- *     section is still useful (e.g. two grade-B products for a grade-B scan)
+ * In both cases we rank by nutriscore and return at most 5 results that are
+ * strictly better grade than the scanned product.  If fewer than 3 pass the
+ * strict filter we relax to same-or-better so the section stays useful.
  *
- * Returns [] if the product already has grade A or has no category/grade data.
+ * The scanned product's own barcode is excluded from results.
  */
-export async function fetchFoodAlternatives(categoryTag, currentGrade) {
-  if (!categoryTag || !currentGrade) return []
-  const currentIndex = GRADE_ORDER.indexOf(currentGrade.toLowerCase())
-  if (currentIndex <= 0) return [] // already grade A
+export async function fetchFoodAlternatives({ tag, strategy }, currentGrade, scannedBarcode) {
+  if (!tag || !strategy) return []
+  const currentIndex = currentGrade
+    ? GRADE_ORDER.indexOf(currentGrade.toLowerCase())
+    : GRADE_ORDER.length - 1   // treat no-grade as worst so we always show results
 
-  const params = new URLSearchParams({
-    action:       'process',
-    json:         1,
-    tagtype_0:    'categories',
-    tag_contains_0: 'contains',
-    tag_0:        categoryTag,
-    sort_by:      'nutriscore_score',
-    page_size:    50,
-    fields:       'code,product_name,brands,image_front_small_url,nutriscore_grade,nova_group,allergens_tags,categories_tags',
-  })
+  if (currentIndex === 0) return [] // already grade A
+
+  const RESULT_FIELDS = 'code,product_name,brands,image_front_small_url,nutriscore_grade,nova_group,allergens_tags,categories_tags'
+
+  let params
+  if (strategy === 'category') {
+    params = new URLSearchParams({
+      action:           'process',
+      json:             1,
+      tagtype_0:        'categories',
+      tag_contains_0:   'contains',
+      tag_0:            tag,
+      sort_by:          'nutriscore_score',
+      page_size:        50,
+      fields:           RESULT_FIELDS,
+    })
+  } else {
+    // strategy === 'name': free-text search, then sort client-side
+    params = new URLSearchParams({
+      search_terms:  tag,
+      search_simple: 1,
+      action:        'process',
+      json:          1,
+      sort_by:       'nutriscore_score',
+      page_size:     50,
+      fields:        RESULT_FIELDS,
+    })
+  }
 
   try {
     const response = await fetchWithTimeout(`${SEARCH_URL}?${params}`, 10000)
     if (!response.ok) return []
     const data = await response.json()
-    const all = (data.products || []).filter(p =>
-      p.product_name?.trim() && p.nutriscore_grade
-    )
+    const all = (data.products || [])
+      .filter(p => p.product_name?.trim() && p.code !== scannedBarcode)
 
-    // Strictly better grade first
-    const strictly = all.filter(p =>
+    const graded = all.filter(p => p.nutriscore_grade)
+
+    const strictly = graded.filter(p =>
       GRADE_ORDER.indexOf(p.nutriscore_grade.toLowerCase()) < currentIndex
     )
-
-    // If fewer than 3 strictly better, relax to same-or-better
     const candidates = strictly.length >= 3
       ? strictly
-      : all.filter(p => GRADE_ORDER.indexOf(p.nutriscore_grade.toLowerCase()) <= currentIndex)
+      : graded.filter(p => GRADE_ORDER.indexOf(p.nutriscore_grade.toLowerCase()) <= currentIndex)
+
+    // If no graded candidates at all, fall back to any named product
+    if (candidates.length === 0 && strategy === 'name') return all.slice(0, 5)
 
     return candidates.slice(0, 5)
   } catch {

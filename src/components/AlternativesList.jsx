@@ -5,11 +5,12 @@ import React, { useState, useEffect } from 'react'
  *
  * Props:
  *   fetchAlternatives  – async () => Product[]   (called once on mount)
- *   currentGrade       – string | null  (used only for food, to label improvement)
+ *   currentGrade       – string | null
  *   type               – 'food' | 'cosmetic'
- *   onSelect           – (code: string) => void  called when a card is tapped
+ *   onSelect           – (code: string) => void
+ *   strategy           – 'category' | 'name'  (used only for disclaimer label)
  */
-export default function AlternativesList({ fetchAlternatives, currentGrade, type, onSelect }) {
+export default function AlternativesList({ fetchAlternatives, currentGrade, type, onSelect, strategy }) {
   const [alternatives, setAlternatives] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -41,14 +42,24 @@ export default function AlternativesList({ fetchAlternatives, currentGrade, type
     return 'bg-slate-700/40 text-slate-400 border-slate-600/30'
   }
 
+  // Section title reflects the search strategy used
+  const title = type === 'food'
+    ? 'Healthier Alternatives'
+    : 'Safer Alternatives'
+  const subtitle = strategy === 'name'
+    ? 'Similar products from the database'
+    : undefined
+
   return (
     <div className="card p-4">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1">
         <span aria-hidden="true" className="text-lg">✨</span>
-        <h3 className="text-sm font-semibold text-white">
-          {type === 'food' ? 'Healthier Alternatives' : 'Safer Alternatives'}
-        </h3>
+        <h3 className="text-sm font-semibold text-white">{title}</h3>
       </div>
+      {subtitle && (
+        <p className="text-[11px] text-slate-500 mb-3">{subtitle}</p>
+      )}
+      {!subtitle && <div className="mb-3" />}
 
       <div
         className="flex overflow-x-auto gap-3 pb-1 snap-x snap-mandatory"
@@ -123,7 +134,11 @@ export default function AlternativesList({ fetchAlternatives, currentGrade, type
       </div>
 
       <p className="text-[10px] text-slate-600 mt-2">
-        Suggestions from {type === 'food' ? 'Open Food Facts' : 'Open Beauty Facts'}. Not personalised advice.
+        {strategy === 'name'
+          ? `Similar products found by name search. `
+          : `Suggestions from the same product category. `
+        }
+        {type === 'food' ? 'Open Food Facts' : 'Open Beauty Facts'}. Not personalised advice.
       </p>
     </div>
   )
