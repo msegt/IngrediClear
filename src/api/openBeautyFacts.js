@@ -4,9 +4,6 @@
  * Fallback chain:
  *   1. Open Beauty Facts + Open Food Facts  — queried in parallel (8 s timeout)
  *   2. Open EAN DB                          — last-resort CORS-open fallback
- *
- * Do NOT set a custom User-Agent header — browsers treat it as a forbidden
- * header on cross-origin requests, silently causing CORS preflight failures.
  */
 
 import { fetchFoodProduct } from './openFoodFacts.js'
@@ -30,7 +27,6 @@ async function fetchWithTimeout(url, ms = 8000) {
 }
 
 export async function fetchProduct(barcode) {
-  // ── 1+2. OBF and OFF in parallel ───────────────────────────────────────
   const [obfResult, offResult] = await Promise.allSettled([
     _fetchFromOBF(barcode),
     fetchFoodProduct(barcode)
@@ -44,7 +40,6 @@ export async function fetchProduct(barcode) {
   if (!obfErr.notFound) throw obfErr
   if (!offErr.notFound) throw offErr
 
-  // ── 3. EAN DB fallback ───────────────────────────────────────────────
   try {
     const product = await fetchUpcProduct(barcode)
     return { ...product, _fallback: true }
@@ -52,7 +47,6 @@ export async function fetchProduct(barcode) {
     if (!eanErr.notFound) throw eanErr
   }
 
-  // ── All three failed ──────────────────────────────────────────────────
   throw Object.assign(
     new Error('Product not found. Try searching by name or paste the ingredient list.'),
     { notFound: true, barcode, dbType: 'beauty' }
@@ -60,7 +54,7 @@ export async function fetchProduct(barcode) {
 }
 
 async function _fetchFromOBF(barcode) {
-  const url = `${BASE_URL}/${barcode}.json?fields=id,code,product_name,brands,categories,ingredients_text,image_url,image_front_url,labels,allergens,allergens_tags,periods_after_opening,countries_tags,packaging,ecoscore_grade`
+  const url = `${BASE_URL}/${barcode}.json?fields=id,code,product_name,brands,categories,categories_tags,ingredients_text,image_url,image_front_url,labels,allergens,allergens_tags,periods_after_opening,countries_tags,packaging,ecoscore_grade`
   const response = await fetchWithTimeout(url)
 
   if (response.status === 404) {
@@ -94,6 +88,73 @@ export async function searchProductsByName(query) {
   try { data = await response.json() } catch { throw new Error('Unexpected response from server.') }
 
   const products = (data.products || []).filter(p => p.product_name && p.product_name.trim())
-  if (!products.length) throw new Error(`No results for “${query}”. Try a different name.`)
+  if (!products.length) throw new Error(`No results for "${query}". Try a different name.`)
   return products
+}
+
+/**
+ * Fetch up to 5 cosmetic alternatives.
+ *
+ * Four-tier strategy (mirrors fetchFoodAlternatives):
+ *   1. Category tag filter  when strategy='category'
+ *   2. Free-text name search when strategy='name'
+ *   3. Ingredient keyword search when strategy='ingredient'
+ *
+ * Ranking: fewer allergens first, then ecoscore_grade ascending.
+ * The scanned product's own barcode is excluded.
+ */
+export async function fetchCosmeticAlternatives({ tag, strategy }, currentAllergenCount, scannedBarcode) {
+  if (!tag || !strategy) return []
+
+  const RESULT_FIELDS = 'code,product_name,brands,image_front_small_url,allergens_tags,ecoscore_grade,labels'
+  const GRADES = ['a', 'b', 'c', 'd', 'e']
+
+  let params
+  if (strategy === 'category') {
+    params = new URLSearchParams({
+      action:           'process',
+      json:             1,
+      tagtype_0:        'categories',
+      tag_contains_0:   'contains',
+      tag_0:            tag,
+      sort_by:          'popularity',
+      page_size:        50,
+      fields:           RESULT_FIELDS,
+    })
+  } else {
+    // strategy === 'name' or strategy === 'ingredient': free-text search
+    params = new URLSearchParams({
+      search_terms:  tag,
+      search_simple: 1,
+      action:        'process',
+      json:          1,
+      sort_by:       'popularity',
+      page_size:     50,
+      fields:        RESULT_FIELDS,
+    })
+  }
+
+  try {
+    const response = await fetchWithTimeout(`${SEARCH_URL}?${params}`, 10000)
+    if (!response.ok) return []
+    const data = await response.json()
+    const all = (data.products || [])
+      .filter(p => p.product_name?.trim() && p.code !== scannedBarcode)
+
+    const allergenCount = (p) => Array.isArray(p.allergens_tags) ? p.allergens_tags.length : 0
+
+    const better = all.filter(p => allergenCount(p) < currentAllergenCount)
+    const candidates = better.length >= 3 ? better : all
+
+    candidates.sort((x, y) => {
+      const gi = GRADES.indexOf((x.ecoscore_grade || 'e').toLowerCase())
+      const gj = GRADES.indexOf((y.ecoscore_grade || 'e').toLowerCase())
+      if (gi !== gj) return gi - gj
+      return allergenCount(x) - allergenCount(y)
+    })
+
+    return candidates.slice(0, 5)
+  } catch {
+    return []
+  }
 }

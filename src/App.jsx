@@ -32,71 +32,7 @@ export default function App() {
     setNotFoundMeta(null)
   }
 
-  // ── Barcode / name lookup ─────────────────────────────────────────────────
-  const handleBarcode = async (barcode) => {
-    if (!barcode || loading) return
-    setLoading(true)
-    setError(null)
-    setNotFoundMeta(null)
-    setProduct(null)
-
-    try {
-      const data = productType === 'food'
-        ? await fetchFoodProduct(barcode)
-        : await fetchProduct(barcode)
-
-      setProduct({ ...data, _type: productType })
-      const updated = saveToHistory({
-        barcode,
-        name:  data.product_name,
-        brand: data.brands,
-        image: data.image_front_url || data.image_url,
-        type:  productType,
-        nova_group:    data.nova_group,
-        nutriscore_grade: data.nutriscore_grade,
-      })
-      setHistory(updated)
-    } catch (err) {
-      if (err.notFound) setNotFoundMeta({ barcode: err.barcode, dbType: err.dbType })
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // ── Raw ingredient text from paste / OCR ─────────────────────────────────
-  const handleIngredients = (ingredientsText) => {
-    setProduct({
-      _type:            'cosmetics',
-      _source:          'manual',
-      product_name:     'Manual ingredient analysis',
-      brands:           '',
-      categories:       '',
-      ingredients_text: ingredientsText,
-      image_url:        '',
-      image_front_url:  ''
-    })
-    setError(null)
-    setNotFoundMeta(null)
-  }
-
-  const handleReset = () => {
-    setProduct(null)
-    setError(null)
-    setNotFoundMeta(null)
-    setActiveTab('manual')
-  }
-
-  // Switch mode and retry same barcode
-  const handleSwitchMode = () => {
-    const barcode = notFoundMeta?.barcode
-    const newType = productType === 'food' ? 'cosmetics' : 'food'
-    setProductType(newType)
-    setError(null)
-    setNotFoundMeta(null)
-    if (barcode) setTimeout(() => handleBarcodeWithType(barcode, newType), 0)
-  }
-
+  // ── Core fetch + display ──────────────────────────────────────────────────
   const handleBarcodeWithType = async (barcode, type) => {
     if (!barcode || loading) return
     setLoading(true)
@@ -126,9 +62,51 @@ export default function App() {
     }
   }
 
+  // ── Barcode / name lookup (uses current productType) ──────────────────────
+  const handleBarcode = async (barcode) => {
+    handleBarcodeWithType(barcode, productType)
+  }
+
+  // ── Alternative tapped — fetch by barcode using same productType ──────────
+  const handleSelectAlternative = (barcode) => {
+    handleBarcodeWithType(barcode, productType)
+  }
+
+  // ── Raw ingredient text from paste / OCR ─────────────────────────────────
+  const handleIngredients = (ingredientsText) => {
+    setProduct({
+      _type:            'cosmetics',
+      _source:          'manual',
+      product_name:     'Manual ingredient analysis',
+      brands:           '',
+      categories:       '',
+      ingredients_text: ingredientsText,
+      image_url:        '',
+      image_front_url:  ''
+    })
+    setError(null)
+    setNotFoundMeta(null)
+  }
+
+  const handleReset = () => {
+    setProduct(null)
+    setError(null)
+    setNotFoundMeta(null)
+    setActiveTab('manual')
+  }
+
+  const handleSwitchMode = () => {
+    const barcode = notFoundMeta?.barcode
+    const newType = productType === 'food' ? 'cosmetics' : 'food'
+    setProductType(newType)
+    setError(null)
+    setNotFoundMeta(null)
+    if (barcode) setTimeout(() => handleBarcodeWithType(barcode, newType), 0)
+  }
+
   const filteredHistory = history.filter(h => h.type === productType)
 
-  // ── Landing screen (no header/nav) ────────────────────────────────────────
+  // ── Landing screen ────────────────────────────────────────────────────────
   if (screen === 'landing') {
     return (
       <main id="main-content">
@@ -144,8 +122,16 @@ export default function App() {
         <Header productType={productType} onProductTypeChange={setProductType} onGoHome={goHome} />
         <main id="main-content" className="flex-1 px-4 py-4 animate-slide-up overflow-y-auto">
           {product._type === 'food'
-            ? <FoodResult    product={product} onBack={handleReset} />
-            : <ProductResult product={product} onBack={handleReset} />}
+            ? <FoodResult
+                product={product}
+                onBack={handleReset}
+                onSelectAlternative={handleSelectAlternative}
+              />
+            : <ProductResult
+                product={product}
+                onBack={handleReset}
+                onSelectAlternative={handleSelectAlternative}
+              />}
         </main>
       </div>
     )
@@ -181,7 +167,7 @@ export default function App() {
           </div>
         )}
 
-        {activeTab === 'scan'     && <Scanner     onDetected={handleBarcode}  productType={productType} />}
+        {activeTab === 'scan'     && <Scanner     onDetected={handleBarcode} productType={productType} />}
         {activeTab === 'manual'   && (
           <ManualEntry
             onSubmit={handleBarcode}
@@ -189,7 +175,7 @@ export default function App() {
             productType={productType}
           />
         )}
-        {activeTab === 'history'  && <ScanHistory  history={filteredHistory}  onSelect={handleBarcode} productType={productType} />}
+        {activeTab === 'history'  && <ScanHistory  history={filteredHistory} onSelect={handleBarcode} productType={productType} />}
         {activeTab === 'grocery'  && <GroceryList  onScanBarcode={handleBarcode} />}
         {activeTab === 'progress' && <ProgressTracker history={history} />}
       </main>
