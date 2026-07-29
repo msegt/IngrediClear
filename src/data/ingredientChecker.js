@@ -201,7 +201,7 @@ const CAUTION_INGREDIENTS = [
     names: ['glycolic acid', 'lactic acid', 'alpha hydroxy acid', 'aha'],
     concern: 'Chemical exfoliants that increase UV sensitivity by thinning the outer skin layer. Can cause stinging, peeling, or post-inflammatory hyperpigmentation if overused, especially in darker skin tones. The EU SCCS recommends a maximum of 10% in rinse-off products and 4% in leave-on products.',
     hazardScore: 3,
-    alternatives: 'Start with lower concentrations (1–2%), use at night, and always follow with broad-spectrum SPF during the day.',
+    alternatives: 'Start with lower concentrations (1\u20132%), use at night, and always follow with broad-spectrum SPF during the day.',
     sources: [
       { label: 'SCCS — Opinion on alpha-hydroxy acids in cosmetics (2015)', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_174.pdf' }
     ]
@@ -220,7 +220,7 @@ const CAUTION_INGREDIENTS = [
     names: ['phenoxyethanol'],
     concern: 'Widely used preservative, considered safe by the EU SCCS at up to 1%. The French medicines agency (ANSM) issued a precautionary advisory in 2012 recommending against its use in products for infants under 3 years (especially nappy area), as it can penetrate immature skin.',
     hazardScore: 2,
-    alternatives: 'For baby products: look for sodium benzoate, potassium sorbate, or naturally preserved formulas. For adults, phenoxyethanol at ≤1% is well-established as safe.',
+    alternatives: 'For baby products: look for sodium benzoate, potassium sorbate, or naturally preserved formulas. For adults, phenoxyethanol at \u22641% is well-established as safe.',
     sources: [
       { label: 'SCCS — Opinion on phenoxyethanol (2016)', url: 'https://ec.europa.eu/health/scientific_committees/consumer_safety/docs/sccs_o_195.pdf' },
       { label: 'ANSM — Phenoxyethanol advisory (France)', url: 'https://www.ansm.sante.fr/actualites/phenoxyethanol' }
@@ -238,7 +238,7 @@ const CAUTION_INGREDIENTS = [
   },
   {
     names: ['fragrance', 'parfum', 'aroma'],
-    concern: 'Generic ‘fragrance’/‘parfum’ declarations can legally conceal dozens of undisclosed individual compounds, some of which are known allergens, sensitisers, or suspected endocrine disruptors. Without full disclosure you cannot assess what you are being exposed to.',
+    concern: 'Generic \u2018fragrance\u2019/\u2018parfum\u2019 declarations can legally conceal dozens of undisclosed individual compounds, some of which are known allergens, sensitisers, or suspected endocrine disruptors. Without full disclosure you cannot assess what you are being exposed to.',
     hazardScore: 4,
     alternatives: 'Fragrance-free products or those that list individual fragrance components. Products certified fragrance-free by IFRA or meeting ISO 16128 botanical standards.',
     sources: [
@@ -248,7 +248,7 @@ const CAUTION_INGREDIENTS = [
   },
   {
     names: ['titanium dioxide'],
-    concern: 'Cosmetic-grade titanium dioxide used in sunscreens and make-up is considered safe when applied to intact skin. However, the IARC classifies inhaled TiO₂ as a possible carcinogen (Group 2B) — a risk relevant specifically to spray/aerosol products. The EU prohibits nano titanium dioxide in spray products as a precaution.',
+    concern: 'Cosmetic-grade titanium dioxide used in sunscreens and make-up is considered safe when applied to intact skin. However, the IARC classifies inhaled TiO\u2082 as a possible carcinogen (Group 2B) \u2014 a risk relevant specifically to spray/aerosol products. The EU prohibits nano titanium dioxide in spray products as a precaution.',
     hazardScore: 3,
     alternatives: 'Avoid spray sunscreens with titanium dioxide; opt for lotion or cream formats.',
     sources: [
@@ -297,7 +297,7 @@ export function analyseIngredients(text) {
         name: raw,
         rating: 'safe',
         isAllergen: true,
-        concern: 'Generally safe for most people — this ingredient is permitted in cosmetics and poses no known risk to the general population. However, if you have a known allergy or sensitivity to this ingredient, you should avoid this product. It is an EU-listed fragrance allergen (Cosmetics Regulation Annex III), which means manufacturers are legally required to declare it on the label above 0.01% in leave-on and 0.1% in rinse-off products, precisely so that people with sensitivities can identify and avoid it.',
+        concern: 'Generally safe for most people \u2014 this ingredient is permitted in cosmetics and poses no known risk to the general population. However, if you have a known allergy or sensitivity to this ingredient, you should avoid this product. It is an EU-listed fragrance allergen (Cosmetics Regulation Annex III), which means manufacturers are legally required to declare it on the label above 0.01% in leave-on and 0.1% in rinse-off products, precisely so that people with sensitivities can identify and avoid it.',
         hazardScore: 2,
         alternatives: 'If you are sensitised to this ingredient, choose fragrance-free products or those that fully disclose individual fragrance components so you can check each one.',
         cosing,
@@ -319,7 +319,7 @@ export function analyseIngredients(text) {
         description,
         cosing,
         sources: [
-          { label: 'EU CosIng — Cosmetics Ingredients Database', url: 'https://ec.europa.eu/growth/tools-databases/cosing/' },
+          { label: 'EU CosIng \u2014 Cosmetics Ingredients Database', url: 'https://ec.europa.eu/growth/tools-databases/cosing/' },
           { label: 'EU Cosmetics Regulation 1223/2009 (Annexes)', url: 'https://eur-lex.europa.eu/eli/reg/2009/1223/oj' }
         ]
       }
@@ -337,4 +337,95 @@ export function analyseIngredients(text) {
       sources: []
     }
   })
+}
+
+/**
+ * Compute a 0\u2013100 numeric safety score for a cosmetic product from its
+ * already-analysed ingredient list (output of analyseIngredients).
+ *
+ * Scoring model:
+ *  - Start at 100.
+ *  - Each harmful ingredient deducts  (hazardScore / 10) * 20 pts (max 20 per ingredient).
+ *  - Each caution ingredient deducts  (hazardScore / 10) * 8  pts (max 8  per ingredient).
+ *  - Each EU-listed allergen deducts  2 pts.
+ *  - Each unknown ingredient deducts  1 pt.
+ *  - Score is clamped to [0, 100] and rounded to the nearest integer.
+ *
+ * Returns { score: number | null, scoreReasons: Array<{text, impact, delta}> }.
+ * Returns null score when there are no analysed ingredients.
+ */
+export function computeCosmeticScore(analysed) {
+  if (!analysed || analysed.length === 0) return { score: null, scoreReasons: [] }
+
+  let score = 100
+  const scoreReasons = []
+
+  const harmful  = analysed.filter(i => i.rating === 'harmful')
+  const caution  = analysed.filter(i => i.rating === 'caution')
+  const allergens = analysed.filter(i => i.isAllergen && i.rating === 'safe')
+  const unknown  = analysed.filter(i => i.rating === 'safe' && !i.isAllergen && !i.concern && !i.cosing)
+
+  for (const item of harmful) {
+    const hs = item.hazardScore ?? 5
+    const delta = -Math.round((hs / 10) * 20)
+    score += delta
+    scoreReasons.push({
+      text: `${item.name} — harmful ingredient (hazard score ${hs}/10)`,
+      impact: 'negative',
+      delta,
+    })
+  }
+
+  for (const item of caution) {
+    const hs = item.hazardScore ?? 3
+    const delta = -Math.round((hs / 10) * 8)
+    score += delta
+    scoreReasons.push({
+      text: `${item.name} — use with caution (hazard score ${hs}/10)`,
+      impact: 'negative',
+      delta,
+    })
+  }
+
+  if (allergens.length > 0) {
+    const delta = -(allergens.length * 2)
+    score += delta
+    scoreReasons.push({
+      text: `${allergens.length} EU-listed fragrance allergen${allergens.length > 1 ? 's' : ''} detected`,
+      impact: 'negative',
+      delta,
+    })
+  }
+
+  if (unknown.length > 0) {
+    const delta = -unknown.length
+    score += delta
+    scoreReasons.push({
+      text: `${unknown.length} ingredient${unknown.length > 1 ? 's' : ''} not in our database (unassessed)`,
+      impact: 'neutral',
+      delta,
+    })
+  }
+
+  if (harmful.length === 0 && caution.length === 0) {
+    scoreReasons.push({
+      text: 'No harmful or flagged ingredients detected',
+      impact: 'positive',
+      delta: null,
+    })
+  }
+
+  const safeCount = analysed.filter(i => i.rating === 'safe' && !i.isAllergen).length
+  if (safeCount > 0) {
+    scoreReasons.push({
+      text: `${safeCount} ingredient${safeCount > 1 ? 's' : ''} assessed as safe or low-risk`,
+      impact: 'positive',
+      delta: null,
+    })
+  }
+
+  return {
+    score: Math.max(0, Math.min(100, Math.round(score))),
+    scoreReasons,
+  }
 }

@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react'
-import { analyseIngredients } from '../data/ingredientChecker.js'
+import { analyseIngredients, computeCosmeticScore } from '../data/ingredientChecker.js'
 import { detectCategory, getCategoryWarnings } from '../data/categoryDetector.js'
 import IngredientRow     from './IngredientRow.jsx'
 import ImageLightbox     from './ImageLightbox.jsx'
 import IngredientCapture from './IngredientCapture.jsx'
 import AlternativesList  from './AlternativesList.jsx'
+import CosmeticScoreGauge from './CosmeticScoreGauge.jsx'
 import { fetchCosmeticAlternatives } from '../api/openBeautyFacts.js'
 import { getAlternativeAnchor, hasUsableAnchor } from '../utils/categoryUtils.js'
 
@@ -40,14 +41,19 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
     return 'safe'
   }, [hasIngredients, harmful, caution])
 
+  const { score: cosmeticScore, scoreReasons } = useMemo(
+    () => hasIngredients ? computeCosmeticScore(analysed) : { score: null, scoreReasons: [] },
+    [hasIngredients, analysed]
+  )
+
   const scoreReason = useMemo(() => {
-    if (!hasIngredients) return 'No ingredient list available — safety cannot be assessed.'
+    if (!hasIngredients) return 'No ingredient list available \u2014 safety cannot be assessed.'
     if (overallScore === 'harmful')
       return `${harmful.length} ingredient${harmful.length > 1 ? 's' : ''} matched a known or suspected hazard. See details below.`
     if (overallScore === 'caution')
       return `${caution.length} ingredient${caution.length > 1 ? 's' : ''} with a use-with-caution flag. See details below.`
     const allergenNote = allergens.length > 0
-      ? ` Contains ${allergens.length} EU-listed fragrance allergen${allergens.length > 1 ? 's' : ''} — safe for most people, but avoid if you have a known sensitivity.`
+      ? ` Contains ${allergens.length} EU-listed fragrance allergen${allergens.length > 1 ? 's' : ''} \u2014 safe for most people, but avoid if you have a known sensitivity.`
       : ''
     const unknownNote = unknown.length > 0
       ? ` ${unknown.length} ingredient${unknown.length > 1 ? 's' : ''} were not in our database and could not be assessed.`
@@ -56,24 +62,22 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
   }, [overallScore, hasIngredients, harmful, caution, allergens, unknown])
 
   const scoreConfig = {
-    safe:    { emoji: '✅', label: 'Generally Safe',                color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
-    caution: { emoji: '⚠️', label: 'Use with Caution',             color: 'text-yellow-400',  bg: 'bg-yellow-500/10  border-yellow-500/30'  },
-    harmful: { emoji: '🚫', label: 'Harmful Ingredients Detected', color: 'text-red-400',     bg: 'bg-red-500/10 border-red-500/30'         },
-    unknown: { emoji: '❓', label: 'Ingredients Not Available',    color: 'text-slate-400',   bg: 'bg-slate-700/40   border-slate-600/40'   },
+    safe:    { emoji: '\u2705', label: 'Generally Safe',                color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+    caution: { emoji: '\u26a0\ufe0f', label: 'Use with Caution',             color: 'text-yellow-400',  bg: 'bg-yellow-500/10  border-yellow-500/30'  },
+    harmful: { emoji: '\uD83D\uDEAB', label: 'Harmful Ingredients Detected', color: 'text-red-400',     bg: 'bg-red-500/10 border-red-500/30'         },
+    unknown: { emoji: '\u2753', label: 'Ingredients Not Available',    color: 'text-slate-400',   bg: 'bg-slate-700/40   border-slate-600/40'   },
   }
   const score    = scoreConfig[overallScore]
   const imageUrl = product.image_url || product.image_front_url
 
-  // Show alternatives for harmful/caution products regardless of whether a
-  // formal category is assigned — Tier 4 of getAlternativeAnchor will derive
-  // a search anchor from the ingredient list itself if nothing else is available.
   const showAlternatives = hasIngredients && (overallScore === 'harmful' || overallScore === 'caution')
   const anchor = getAlternativeAnchor(product, 'cosmetic')
   const currentAllergenCount = Array.isArray(product.allergens_tags) ? product.allergens_tags.length : allergens.length
   const scannedBarcode = product.code || product.id
 
   const handleShare = async () => {
-    const text = `IngrediClear result for ${product.product_name || 'this product'}:\n${score.emoji} ${score.label}\n${scoreReason}\n\nhttps://github.com/msegt/IngrediClear`
+    const scoreText = cosmeticScore !== null ? ` Safety score: ${cosmeticScore}/100.` : ''
+    const text = `IngrediClear result for ${product.product_name || 'this product'}:\n${score.emoji} ${score.label}${scoreText}\n${scoreReason}\n\nhttps://github.com/msegt/IngrediClear`
     if (navigator.share) {
       await navigator.share({ title: 'IngrediClear', text })
     } else {
@@ -92,11 +96,11 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
       <div className="flex items-center justify-between">
         <button onClick={onBack} aria-label="Scan another product"
           className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium">
-          <span aria-hidden="true">←</span> Scan another
+          <span aria-hidden="true">\u2190</span> Scan another
         </button>
         <button onClick={handleShare} aria-label="Share this result"
           className="flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300 transition font-medium">
-          <span aria-hidden="true">↑</span> Share
+          <span aria-hidden="true">\u2191</span> Share
         </button>
       </div>
 
@@ -109,7 +113,7 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
               className="w-20 h-20 object-contain bg-slate-800 transition group-hover:brightness-75"
               onError={e => e.target.parentElement.style.display = 'none'} />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition pointer-events-none">
-              <span className="text-white text-xl drop-shadow-lg" aria-hidden="true">🔍</span>
+              <span className="text-white text-xl drop-shadow-lg" aria-hidden="true">\uD83D\uDD0D</span>
             </div>
           </button>
         )}
@@ -126,10 +130,10 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
 
       {categoryWarnings.length > 0 && (
         <div className="card p-4 border border-blue-500/30 bg-blue-500/10">
-          <p className="text-xs font-semibold text-blue-400 mb-2"><span aria-hidden="true">📋</span> {category} — What to watch for</p>
+          <p className="text-xs font-semibold text-blue-400 mb-2"><span aria-hidden="true">\uD83D\uDCCB</span> {category} \u2014 What to watch for</p>
           <ul className="flex flex-col gap-1">
             {categoryWarnings.map((w, i) => (
-              <li key={i} className="text-xs text-slate-300 flex gap-2"><span className="text-blue-400 mt-0.5" aria-hidden="true">•</span>{w}</li>
+              <li key={i} className="text-xs text-slate-300 flex gap-2"><span className="text-blue-400 mt-0.5" aria-hidden="true">\u2022</span>{w}</li>
             ))}
           </ul>
         </div>
@@ -138,12 +142,12 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
       {!hasIngredients && (
         <div className="flex flex-col gap-4">
           <div className="card p-4 border border-amber-500/30 bg-amber-500/10 flex gap-3 items-start">
-            <span className="text-2xl mt-0.5" aria-hidden="true">📋</span>
+            <span className="text-2xl mt-0.5" aria-hidden="true">\uD83D\uDCCB</span>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-amber-400 text-sm">No ingredient list in the database</p>
               <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                 This product was found but has no ingredient data yet. Paste the list from the packaging
-                or take a photo — the analysis runs entirely on your device.
+                or take a photo \u2014 the analysis runs entirely on your device.
               </p>
             </div>
           </div>
@@ -153,7 +157,7 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
               target="_blank" rel="noopener noreferrer"
               className="text-center text-xs text-slate-400 hover:text-brand-400 transition underline underline-offset-2">
               Also add these ingredients to Open Beauty Facts to help others
-              <span aria-hidden="true"> →</span>
+              <span aria-hidden="true"> \u2192</span>
             </a>
           )}
         </div>
@@ -163,9 +167,9 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
         <>
           {manualIngredients && (
             <div className="card p-3 border border-brand-500/30 bg-brand-500/10 flex items-center gap-3">
-              <span aria-hidden="true">ℹ️</span>
+              <span aria-hidden="true">\u2139\uFE0F</span>
               <p className="text-xs text-brand-300 leading-relaxed flex-1">
-                Analysis based on ingredients you entered — not from the product database.
+                Analysis based on ingredients you entered \u2014 not from the product database.
               </p>
               <button onClick={() => setManualIngredients(null)}
                 className="text-xs text-slate-400 hover:text-white transition flex-shrink-0"
@@ -181,6 +185,8 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
               <p className="text-xs text-slate-400 mt-1 leading-relaxed" aria-hidden="true">{scoreReason}</p>
             </div>
           </div>
+
+          <CosmeticScoreGauge score={cosmeticScore} scoreReasons={scoreReasons} />
 
           <div className="grid grid-cols-4 gap-2" role="list" aria-label="Ingredient summary">
             {[
@@ -200,18 +206,18 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
 
           {unknown.length > 0 && (
             <div className="card p-3 border border-slate-600/40 bg-slate-700/20 flex gap-3 items-start">
-              <span className="text-lg mt-0.5" aria-hidden="true">❓</span>
+              <span className="text-lg mt-0.5" aria-hidden="true">\u2753</span>
               <p className="text-xs text-slate-400 leading-relaxed">
-                <span className="font-semibold text-slate-300">{unknown.length} ingredient{unknown.length > 1 ? 's' : ''} not in our database</span> and could not be assessed. This does not mean they are safe — it means we have no data on them.
+                <span className="font-semibold text-slate-300">{unknown.length} ingredient{unknown.length > 1 ? 's' : ''} not in our database</span> and could not be assessed. This does not mean they are safe \u2014 it means we have no data on them.
               </p>
             </div>
           )}
 
-          {harmful.length > 0   && <IngredientSection title="Harmful Ingredients"       titleEmoji="🚫" items={harmful} />}
-          {caution.length > 0   && <IngredientSection title="Use with Caution"          titleEmoji="⚠️" items={caution} />}
+          {harmful.length > 0   && <IngredientSection title="Harmful Ingredients"       titleEmoji="\uD83D\uDEAB" items={harmful} />}
+          {caution.length > 0   && <IngredientSection title="Use with Caution"          titleEmoji="\u26a0\ufe0f" items={caution} />}
           {allergens.length > 0 && (
-            <IngredientSection title="Fragrance Allergens Detected" titleEmoji="🤧" items={allergens}
-              note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels — so that anyone with a known sensitivity can identify and avoid them." />
+            <IngredientSection title="Fragrance Allergens Detected" titleEmoji="\uD83E\uDD27" items={allergens}
+              note="These ingredients are safe for most people. They are listed here because the EU legally requires manufacturers to declare them on labels \u2014 so that anyone with a known sensitivity can identify and avoid them." />
           )}
 
           {showAlternatives && hasUsableAnchor(anchor) && (
@@ -229,8 +235,8 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
               <button onClick={() => setShowAll(v => !v)}
                 className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-400 hover:text-white transition"
                 aria-expanded={showAll} aria-controls="safe-unclassified-list">
-                <span><span aria-hidden="true">✅</span> Safe &amp; unclassified ({safe.length + unknown.length})</span>
-                <span className="text-xs" aria-hidden="true">{showAll ? '▲ Hide' : '▼ Show'}</span>
+                <span><span aria-hidden="true">\u2705</span> Safe &amp; unclassified ({safe.length + unknown.length})</span>
+                <span className="text-xs" aria-hidden="true">{showAll ? '\u25b2 Hide' : '\u25bc Show'}</span>
               </button>
               {showAll && (
                 <div id="safe-unclassified-list" className="px-4 pb-3">
@@ -243,7 +249,7 @@ export default function ProductResult({ product, onBack, onSelectAlternative }) 
       )}
 
       <p className="text-center text-xs text-slate-400 px-4">
-        Data from Open Beauty Facts (CC BY-SA). Not medical advice — consult a dermatologist for personal guidance.
+        Data from Open Beauty Facts (CC BY-SA). Not medical advice \u2014 consult a dermatologist for personal guidance.
       </p>
     </div>
   )
