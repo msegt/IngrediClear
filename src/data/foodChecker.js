@@ -146,6 +146,133 @@ function round(value, digits = 1) {
   return Number.isFinite(n) ? Number(n.toFixed(digits)) : null
 }
 
+/**
+ * Calculates a health score (0–100) from raw nutrient values when no
+ * Nutri-Score is available. Each nutrient is scored independently using
+ * UK FSA traffic-light thresholds, then combined into an overall score.
+ *
+ * The score starts at a neutral 50 ONLY if NO negative markers are present
+ * at all. When negative markers exist, their penalties are applied to a
+ * weighted average that reflects the actual nutritional profile.
+ *
+ * Returns null when there is insufficient data to produce a meaningful score.
+ *
+ * @param {object} nutrients - { sugar, salt, saturatedFat, protein, fiber }
+ * @returns {{ score: number|null, reasons: Array }}
+ */
+function calculateNutrientBasedScore(nutrients) {
+  const { sugar, salt, saturatedFat, protein, fiber } = nutrients
+  const reasons = []
+
+  // Each nutrient contributes a component score (0–100) and a weight.
+  // Negative nutrients (sugar, salt, sat fat): lower value → higher score.
+  // Positive nutrients (protein, fiber): higher value → higher score.
+  const components = []
+
+  // ── Sugar ──────────────────────────────────────────────────────────────
+  // FSA thresholds: low <5g, medium 5–22.5g, high ≥22.5g
+  if (sugar !== null) {
+    let sugarScore, sugarImpact, sugarDelta
+    if (sugar < 5) {
+      sugarScore = 90
+      sugarImpact = 'positive'
+      sugarDelta = null
+      reasons.push({ impact: 'positive', text: `Low sugar (${sugar}g/100g) — below UK FSA "low" threshold of 5g/100g.`, delta: null })
+    } else if (sugar < 22.5) {
+      // Linear interpolation: 5g → 70, 22.5g → 30
+      sugarScore = Math.round(70 - ((sugar - 5) / (22.5 - 5)) * 40)
+      sugarImpact = 'neutral'
+      sugarDelta = null
+      reasons.push({ impact: 'neutral', text: `Moderate sugar (${sugar}g/100g) — UK FSA medium band (5–22.5g/100g).`, delta: null })
+    } else {
+      // Linear extrapolation: 22.5g → 25, capped at minimum 5
+      sugarScore = Math.max(5, Math.round(25 - ((sugar - 22.5) / 10) * 15))
+      sugarImpact = 'negative'
+      sugarDelta = null
+      reasons.push({ impact: 'negative', text: `High sugar (${sugar}g/100g) — above UK FSA "high" threshold of 22.5g/100g.`, delta: null })
+    }
+    components.push({ score: sugarScore, weight: 3, label: 'sugar' })
+  }
+
+  // ── Salt ───────────────────────────────────────────────────────────────
+  // FSA thresholds: low <0.3g, medium 0.3–1.5g, high ≥1.5g
+  if (salt !== null) {
+    let saltScore
+    if (salt < 0.3) {
+      saltScore = 90
+      reasons.push({ impact: 'positive', text: `Low salt (${salt}g/100g) — below UK FSA "low" threshold of 0.3g/100g.`, delta: null })
+    } else if (salt < 1.5) {
+      saltScore = Math.round(70 - ((salt - 0.3) / (1.5 - 0.3)) * 40)
+      reasons.push({ impact: 'neutral', text: `Moderate salt (${salt}g/100g) — UK FSA medium band (0.3–1.5g/100g).`, delta: null })
+    } else {
+      saltScore = Math.max(5, Math.round(25 - ((salt - 1.5) / 1.5) * 15))
+      reasons.push({ impact: 'negative', text: `High salt (${salt}g/100g) — above UK FSA "high" threshold of 1.5g/100g.`, delta: null })
+    }
+    components.push({ score: saltScore, weight: 3, label: 'salt' })
+  }
+
+  // ── Saturated fat ──────────────────────────────────────────────────────
+  // FSA thresholds: low <1.5g, medium 1.5–5g, high ≥5g
+  if (saturatedFat !== null) {
+    let satScore
+    if (saturatedFat < 1.5) {
+      satScore = 90
+      reasons.push({ impact: 'positive', text: `Low saturated fat (${saturatedFat}g/100g) — below UK FSA "low" threshold of 1.5g/100g.`, delta: null })
+    } else if (saturatedFat < 5) {
+      satScore = Math.round(70 - ((saturatedFat - 1.5) / (5 - 1.5)) * 40)
+      reasons.push({ impact: 'neutral', text: `Moderate saturated fat (${saturatedFat}g/100g) — UK FSA medium band (1.5–5g/100g).`, delta: null })
+    } else {
+      satScore = Math.max(5, Math.round(25 - ((saturatedFat - 5) / 5) * 15))
+      reasons.push({ impact: 'negative', text: `High saturated fat (${saturatedFat}g/100g) — above UK FSA "high" threshold of 5g/100g.`, delta: null })
+    }
+    components.push({ score: satScore, weight: 3, label: 'saturated fat' })
+  }
+
+  // ── Protein ────────────────────────────────────────────────────────────
+  // EU Reg. 1924/2006: "source of protein" ≥12% energy, "high protein" ≥20%.
+  // We use simpler FSA-style thresholds: low <5g, medium 5–10g, high ≥10g.
+  if (protein !== null) {
+    let proteinScore
+    if (protein >= 10) {
+      proteinScore = 90
+      reasons.push({ impact: 'positive', text: `High protein (${protein}g/100g) — above EU "good source" threshold of 10g/100g (EU Reg. 1924/2006).`, delta: null })
+    } else if (protein >= 5) {
+      proteinScore = Math.round(60 + ((protein - 5) / 5) * 25)
+      reasons.push({ impact: 'neutral', text: `Moderate protein (${protein}g/100g).`, delta: null })
+    } else {
+      proteinScore = Math.round(40 + (protein / 5) * 20)
+      reasons.push({ impact: 'neutral', text: `Low protein (${protein}g/100g).`, delta: null })
+    }
+    components.push({ score: proteinScore, weight: 2, label: 'protein' })
+  }
+
+  // ── Fibre ──────────────────────────────────────────────────────────────
+  // EU Reg. 1924/2006: "source of fibre" ≥3g/100g, "high in fibre" ≥6g/100g.
+  if (fiber !== null) {
+    let fiberScore
+    if (fiber >= 6) {
+      fiberScore = 95
+      reasons.push({ impact: 'positive', text: `High fibre (${fiber}g/100g) — meets EU "high in fibre" criterion (≥6g/100g, EU Reg. 1924/2006).`, delta: null })
+    } else if (fiber >= 3) {
+      fiberScore = 80
+      reasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g) — meets EU "source of fibre" criterion (≥3g/100g, EU Reg. 1924/2006).`, delta: null })
+    } else {
+      fiberScore = Math.round(40 + (fiber / 3) * 30)
+      reasons.push({ impact: 'neutral', text: `Low fibre (${fiber}g/100g) — below EU "source of fibre" threshold (3g/100g).`, delta: null })
+    }
+    components.push({ score: fiberScore, weight: 2, label: 'fibre' })
+  }
+
+  if (components.length === 0) return { score: null, reasons }
+
+  // Weighted average of all component scores
+  const totalWeight = components.reduce((sum, c) => sum + c.weight, 0)
+  const weightedSum = components.reduce((sum, c) => sum + c.score * c.weight, 0)
+  const score = Math.round(Math.max(5, Math.min(95, weightedSum / totalWeight)))
+
+  return { score, reasons }
+}
+
 export function analyseFoodProduct(product) {
   const nutriments = product.nutriments || {}
   const salt         = round(nutriments.salt_100g)
@@ -206,6 +333,7 @@ export function analyseFoodProduct(product) {
   let healthScore = null
 
   if (nutriscore && { A: 1, B: 1, C: 1, D: 1, E: 1 }[nutriscore]) {
+    // ── Path 1: official Nutri-Score present ─────────────────────────────
     healthScore = { A: 92, B: 75, C: 55, D: 35, E: 15 }[nutriscore]
     scoreReasons.push({
       impact: 'neutral',
@@ -213,6 +341,7 @@ export function analyseFoodProduct(product) {
       delta: null,
     })
   } else if (dataQuality === 'none') {
+    // ── Path 2: no Nutri-Score, no nutrient data at all ──────────────────
     healthScore = null
     scoreReasons.push({
       impact: 'neutral',
@@ -220,7 +349,10 @@ export function analyseFoodProduct(product) {
       delta: null,
     })
   } else {
-    healthScore = 55
+    // ── Path 3: no Nutri-Score, but we have some nutrient values ─────────
+    // Calculate score from available nutrients using UK FSA thresholds.
+    // Each nutrient is scored independently (0–100) and combined via a
+    // weighted average — no arbitrary starting point of 55.
     const missingNutrients = []
     if (salt === null)         missingNutrients.push('salt')
     if (sugar === null)        missingNutrients.push('sugar')
@@ -228,9 +360,14 @@ export function analyseFoodProduct(product) {
     if (protein === null)      missingNutrients.push('protein')
     if (fiber === null)        missingNutrients.push('fibre')
 
+    const { score: calculatedScore, reasons: nutrientReasons } = calculateNutrientBasedScore(
+      { sugar, salt, saturatedFat, protein, fiber }
+    )
+
+    healthScore = calculatedScore
     scoreReasons.push({
       impact: 'neutral',
-      text: `No Nutri-Score available — score estimated from ${availableNutrients.length} of 5 tracked nutrients using UK FSA traffic-light thresholds. Starting point: 55/100.`,
+      text: `No Nutri-Score available — score calculated from ${availableNutrients.length} of 5 tracked nutrients (${availableNutrients.length === 5 ? 'full data' : 'partial data'}) using UK FSA traffic-light thresholds and EU Reg. 1924/2006.`,
       delta: null,
     })
 
@@ -242,51 +379,11 @@ export function analyseFoodProduct(product) {
       })
     }
 
-    if (flags.some(f => f.level === 'high' && f.label.includes('sugar'))) {
-      healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High sugar (${sugar}g/100g) — above UK FSA "high" threshold of 22.5g/100g.`, delta: -20 })
-    } else if (flags.some(f => f.level === 'moderate' && f.label.includes('sugar'))) {
-      healthScore -= 5
-      scoreReasons.push({ impact: 'negative', text: `Moderate sugar (${sugar}g/100g) — UK FSA medium band (5–22.5g/100g).`, delta: -5 })
-    } else if (sugar !== null) {
-      scoreReasons.push({ impact: 'positive', text: `Low sugar (${sugar}g/100g) — below UK FSA "low" threshold of 5g/100g.`, delta: null })
-    }
+    scoreReasons.push(...nutrientReasons)
 
-    if (flags.some(f => f.level === 'high' && f.label.includes('salt'))) {
-      healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High salt (${salt}g/100g) — above UK FSA "high" threshold of 1.5g/100g.`, delta: -20 })
-    } else if (flags.some(f => f.level === 'moderate' && f.label.includes('salt'))) {
-      healthScore -= 5
-      scoreReasons.push({ impact: 'negative', text: `Moderate salt (${salt}g/100g) — UK FSA medium band (0.3–1.5g/100g).`, delta: -5 })
-    } else if (salt !== null) {
-      scoreReasons.push({ impact: 'positive', text: `Low salt (${salt}g/100g) — below UK FSA "low" threshold of 0.3g/100g.`, delta: null })
+    if (healthScore !== null) {
+      healthScore = Math.max(5, Math.min(95, healthScore))
     }
-
-    if (flags.some(f => f.level === 'high' && f.label.includes('saturated'))) {
-      healthScore -= 20
-      scoreReasons.push({ impact: 'negative', text: `High saturated fat (${saturatedFat}g/100g) — above UK FSA "high" threshold of 5g/100g.`, delta: -20 })
-    } else if (flags.some(f => f.level === 'moderate' && f.label.includes('saturated'))) {
-      healthScore -= 5
-      scoreReasons.push({ impact: 'negative', text: `Moderate saturated fat (${saturatedFat}g/100g) — UK FSA medium band (1.5–5g/100g).`, delta: -5 })
-    } else if (saturatedFat !== null) {
-      scoreReasons.push({ impact: 'positive', text: `Low saturated fat (${saturatedFat}g/100g) — below UK FSA "low" threshold of 1.5g/100g.`, delta: null })
-    }
-
-    if (flags.some(f => f.level === 'good' && f.label.includes('protein'))) {
-      healthScore += 10
-      scoreReasons.push({ impact: 'positive', text: `High protein (${protein}g/100g) — above "good source" threshold of 10g/100g (EU Reg. 1924/2006).`, delta: +10 })
-    } else if (protein !== null) {
-      scoreReasons.push({ impact: 'neutral', text: `Protein: ${protein}g/100g — below "good source" threshold (10g/100g). No adjustment.`, delta: null })
-    }
-
-    if (flags.some(f => f.level === 'good' && f.label.includes('fibre'))) {
-      healthScore += 10
-      scoreReasons.push({ impact: 'positive', text: `Good fibre content (${fiber}g/100g) — meets EU "source of fibre" criterion (≥3g/100g).`, delta: +10 })
-    } else if (fiber !== null) {
-      scoreReasons.push({ impact: 'neutral', text: `Fibre: ${fiber}g/100g — below EU "source of fibre" threshold (3g/100g). No adjustment.`, delta: null })
-    }
-
-    healthScore = Math.max(5, Math.min(95, healthScore))
   }
 
   return {
